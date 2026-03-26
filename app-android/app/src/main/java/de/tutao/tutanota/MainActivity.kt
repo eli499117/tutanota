@@ -67,6 +67,7 @@ import de.tutao.tutashared.AndroidMobileSystemFacade.Companion.TUTA_INTENT_ACTIO
 import de.tutao.tutashared.AndroidNativeCryptoFacade
 import de.tutao.tutashared.AndroidThemeFacade
 import de.tutao.tutashared.AppType
+import de.tutao.tutashared.TutaBilling
 import de.tutao.tutashared.CancelledError
 import de.tutao.tutashared.DateProviderImpl
 import de.tutao.tutashared.NetworkUtils
@@ -147,7 +148,11 @@ class MainActivity : FragmentActivity(), ActivityUtils, WebViewReloader, Webauth
 	@SuppressLint("SetJavaScriptEnabled", "StaticFieldLeak")
 	override fun onCreate(savedInstanceState: Bundle?) {
 		Log.d(TAG, "App started")
-
+		// FIXME: can we make this depend on the flavor
+		val client = TutaBilling.getBillingClient()
+		if (client.isReal()) {
+			client.buyThing()
+		}
 		// App is handling a redelivered intent, ignoring as we probably already handled it
 		if (savedInstanceState != null && (intent.action == OPEN_USER_MAILBOX_ACTION || intent.action == OPEN_CALENDAR_ACTION)) {
 			intent.putExtra(ALREADY_HANDLED_INTENT, true)

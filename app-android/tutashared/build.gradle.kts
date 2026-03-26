@@ -15,6 +15,8 @@ plugins {
 
 group = "de.tutao"
 
+android.flavorDimensions.add("releaseType")
+
 android {
 	namespace = "de.tutao.tutashared"
 	compileSdk = 36
@@ -82,8 +84,8 @@ kotlin {
 }
 
 val tutanota3Root = layout.projectDirectory
-	.dir("..") // tutanota/tutashared
-	.dir("..") // tutanota
+	.dir("..") // tutashared/tutashared
+	.dir("..") // tutashared
 val ftsCreatePath = tutanota3Root.dir("libs").dir("Signal-FTS5-Extension")
 
 fun getActiveBuildType(): String {
@@ -141,6 +143,9 @@ dependencies {
 	implementation(libs.androidx.browser)
 	implementation(libs.androidx.biometric)
 	implementation(libs.androidx.datastore.preferences)
+
+	// we don't need this for f-droid
+	tutaoImplementation('com.android.billingclient:billing-ktx:8.3.0')
 
 	implementation(libs.androidx.room.ktx)
 	// For Kotlin use kapt instead of annotationProcessor
