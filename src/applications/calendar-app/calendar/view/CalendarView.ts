@@ -33,9 +33,9 @@ import {
 } from "../../../../platform-kit/app-env"
 import { locator } from "../../../common/api/main/CommonLocator"
 import {
+	birthdayCalendarEventContactId,
 	CalendarType,
 	DefaultDateProvider,
-	extractContactIdFromEvent,
 	findFirstPrivateCalendar,
 	getTimeZone,
 	hasSourceUrl,
@@ -126,6 +126,8 @@ import { ImportInteractionHandler } from "../../../common/calendar/gui/ImportInt
 import { EventSeriesResolver } from "../../../common/calendar/import/EventSeriesResolver"
 import { reverse } from "../../../common/misc/EnumUtils"
 import { isFreeSignupOnly } from "../../../common/misc/LoginUtils"
+import { LazyComponent } from "../../../common/gui/LazyComponent"
+import { CalendarQuickSearchBar, CalendarSearchBarAttrs } from "../../CalendarQuickSearchBar"
 
 export type GroupColors = Map<Id, string>
 
@@ -134,7 +136,6 @@ export interface CalendarViewAttrs extends TopLevelAttrs {
 	header: AppHeaderAttrs
 	calendarViewModel: CalendarViewModel
 	bottomNav?: () => Children
-	lazySearchBar: () => Children
 }
 
 const CalendarViewTypeByValue = reverse(CalendarViewType)
@@ -568,7 +569,7 @@ export class CalendarView extends BaseTopLevelView implements TopLevelView<Calen
 			const id = this.viewModel.eventPreviewModel.calendarEvent._id
 			const idParts = id[1].split("#")
 
-			const contactId = extractContactIdFromEvent(last(idParts))
+			const contactId = birthdayCalendarEventContactId(id)
 			if (contactId == null) {
 				return null
 			}
@@ -1170,7 +1171,17 @@ export class CalendarView extends BaseTopLevelView implements TopLevelView<Calen
 			m(this.viewSlider, {
 				header: m(Header, {
 					firstColWidth: this.sidebarColumn.width,
-					searchBar: attrs.lazySearchBar,
+					searchBar: () =>
+						m(LazyComponent<CalendarSearchBarAttrs, CalendarQuickSearchBar>, {
+							loader: async () => (await import("../../CalendarQuickSearchBar.js")).CalendarQuickSearchBar,
+							attrs: {
+								loadResults: (searchQuery) => this.viewModel.getSearchResult(searchQuery),
+								selectResult: (searchQuery, event) => {
+									this.viewModel.selectSearchResult(searchQuery, event)
+								},
+								shouldOfferUpgrade: locator.logins.getUserController().isFreeAccount(),
+							},
+						}),
 					...attrs.header,
 					buttons: renderHeaderButtons(),
 				}),

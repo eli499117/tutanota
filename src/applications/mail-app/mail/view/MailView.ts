@@ -51,7 +51,7 @@ import { MobileMailMultiselectionActionBar } from "./MobileMailMultiselectionAct
 import { SelectAllCheckbox } from "../../../../ui/SelectAllCheckbox.js"
 import { DesktopListToolbar, DesktopViewerToolbar } from "../../../../ui/DesktopToolbars.js"
 import { MobileHeader } from "../../../../ui/MobileHeader.js"
-import { LazySearchBar } from "../../LazySearchBar.js"
+import { MailQuickSearchBar, MailSearchBarAttrs } from "../../MailQuickSearchBar.js"
 import { MultiselectMobileHeader } from "../../../../ui/MultiselectMobileHeader.js"
 import { MailViewModel } from "./MailViewModel.js"
 import { selectionAttrsForList } from "../../../common/misc/ListModel.js"
@@ -85,6 +85,8 @@ import { ExpanderPanel } from "../../../../ui/base/Expander"
 import { MailLabelsView } from "./MailLabelsView"
 import { showEditLabelDialog } from "./EditLabelDialog"
 import { ButtonSize } from "../../../../ui/base/ButtonSize"
+import { LazyComponent } from "../../../common/gui/LazyComponent"
+import { IndexingNotSupportedError } from "../../../common/api/common/error/IndexingNotSupportedError"
 
 assertMainOrNode()
 
@@ -587,8 +589,27 @@ export class MailView extends BaseTopLevelView implements TopLevelView<MailViewA
 					searchBar: () =>
 						// not showing search for external users
 						locator.logins.isInternalUserLoggedIn()
-							? m(LazySearchBar, {
-									placeholder: lang.get("searchEmails_placeholder"),
+							? m(LazyComponent<MailSearchBarAttrs, MailQuickSearchBar>, {
+									loader: async () => (await import("../../MailQuickSearchBar.js")).MailQuickSearchBar,
+									attrs: {
+										loadResults: (searchQuery) => this.mailViewModel.getSearchResult(searchQuery),
+										selectResult: (searchQuery, mail) => {
+											this.mailViewModel.selectSearchResult(searchQuery, mail)
+										},
+										shouldOfferUpgrade: locator.logins.getUserController().isFreeAccount(),
+										needsToEnableSearch: () => !mailLocator.mailSearchModel.indexState().mailIndexEnabled,
+										enableSearch: () =>
+											mailLocator.indexerFacade
+												.enableMailIndexing()
+												.then(() => true)
+												.catch(
+													ofClass(IndexingNotSupportedError, () => {
+														Dialog.message(isApp() ? "searchDisabledApp_msg" : "searchDisabled_msg")
+														return false
+													}),
+												),
+										indexingSupported: mailLocator.mailSearchModel.indexingSupported,
+									},
 								})
 							: null,
 					...attrs.header,

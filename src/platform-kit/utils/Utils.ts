@@ -555,6 +555,14 @@ export function filterInt(value: string): number {
 	}
 }
 
+export function nanToNull(number: number): number | null {
+	if (isNaN(number)) {
+		return null
+	} else {
+		return number
+	}
+}
+
 interface Positioned {
 	x: number
 	y: number
@@ -685,7 +693,7 @@ function traceUnresolvedPromises<T>(promise: Promise<T>, tag?: string) {
 
 export function isSessionStorageAvailable(): boolean {
 	try {
-		return typeof sessionStorage !== "undefined"
+		return typeof sessionStorage !== "undefined" && sessionStorage != null
 	} catch (e) {
 		return false
 	}

@@ -2,7 +2,7 @@ import { TopLevelAttrs, TopLevelView } from "../../../../ui/base/TopLevelView"
 import { DrawerMenuAttrs } from "../../../common/gui/nav/DrawerMenu"
 import { AppHeaderAttrs, Header } from "../../../../ui/Header"
 import m, { Children, Vnode } from "mithril"
-import { DriveOperationType, DriveViewModel, OperationUpdate } from "./DriveViewModel"
+import { DriveViewModel } from "./DriveViewModel"
 import { BaseTopLevelView } from "../../../../ui/BaseTopLevelView"
 import { ViewSlider } from "../../../../ui/nav/ViewSlider"
 import { ColumnType, ViewColumn } from "../../../../ui/base/ViewColumn"
@@ -17,23 +17,30 @@ import { DriveSidebar } from "./Sidebar"
 import { listSelectionKeyboardShortcuts } from "../../../../ui/base/ListUtils"
 import { ListState, MultiselectMode } from "../../../../ui/base/List"
 import { keyManager, Shortcut } from "../../../../ui/utils/KeyManager"
-import { AppType, CancelledError, isAndroidApp, Keys, OperationStatus, UpgradePromptType } from "@tutao/app-env"
+import { AppType, CancelledError, isAndroidApp, Keys, UpgradePromptType } from "@tutao/app-env"
 import { formatStorageSize } from "../../../../ui/utils/Formatter"
 import { DriveProgressBar } from "./DriveProgressBar"
 import { modal } from "../../../../ui/base/Modal"
-import { driveFolderName, isMobileDriveLayout, newItemActions, showDuplicateFilesChoiceDialog, showNewFolderDialog, showRenameDialog } from "./DriveGuiUtils"
+import {
+	cancelAllTransfersConfirmationDialog,
+	driveFolderName,
+	isMobileDriveLayout,
+	newItemActions,
+	operationUpdateSnackbar,
+	showDuplicateFilesChoiceDialog,
+	showNewFolderDialog,
+	showRenameDialog,
+} from "./DriveGuiUtils"
 import { getDetachedDropdownBounds } from "../../../../ui/base/GuiUtils"
 import { Dialog } from "../../../../ui/base/Dialog"
-import { lang, TranslationKey } from "../../../../ui/utils/LanguageViewModel"
+import { lang } from "../../../../ui/utils/LanguageViewModel"
 import { styles } from "../../../../ui/styles"
 import { MobileHeader } from "../../../../ui/MobileHeader"
 import { EnterMultiselectIconButton } from "../../../../ui/EnterMultiselectIconButton"
-import { FolderFolderItem, FolderItem, FolderItemId, folderItemToId } from "./DriveUtils"
+import { FolderFolderItem, FolderItem, FolderItemId, folderItemToId, OperationUpdate, toFolderItem } from "./DriveUtils"
 import { DriveFolderType } from "../../../common/api/worker/facades/lazy/DriveFacade"
-import { showSnackBar } from "../../../../ui/base/SnackBar"
 import Stream from "mithril/stream"
-import { assertNotNull, isNotEmpty, isNotNull } from "@tutao/utils"
-import { handleUncaughtError } from "../../../common/misc/ErrorHandler"
+import { isNotEmpty, isNotNull } from "@tutao/utils"
 import { MoveItems } from "./DriveMoveItemDialog"
 import { showUpgradeWizardOrSwitchSubscriptionDialog } from "../../../common/misc/SubscriptionDialogs"
 import { MAIL_PREFIX } from "../../../../ui/utils/RouteChange"
@@ -50,6 +57,9 @@ import { DriveFolder } from "@tutao/entities/drive"
 import { windowFacade } from "../../../common/misc/WindowFacade"
 import { DriveMobileSortButton } from "./DriveMobileSortButton"
 import { renderHeaderButtons } from "../../../calendar-app/gui/HeaderButtons"
+import { LazyComponent } from "../../../common/gui/LazyComponent"
+import { DriveQuickSearchBar, DriveSearchBarAttrs } from "./DriveQuickSearchBar"
+import { client } from "../../../../platform-kit/app-env/boot/ClientDetector"
 
 export interface DriveViewAttrs extends TopLevelAttrs {
 	drawerAttrs: DrawerMenuAttrs
@@ -57,7 +67,6 @@ export interface DriveViewAttrs extends TopLevelAttrs {
 	driveViewModel: DriveViewModel
 	showMoveItemDialog: (items: FolderItem[], moveItems: MoveItems) => unknown
 	bottomNav?: () => Children
-	lazySearchBar: () => Children
 	filePicker: DriveFilePicker
 }
 
@@ -95,44 +104,12 @@ export class DriveView extends BaseTopLevelView implements TopLevelView<DriveVie
 
 	oncreate() {
 		keyManager.registerShortcuts(this.shortcuts)
-		this.operationUpdatesSubscription = this.driveViewModel.operationUpdates.map((maybeOperationUpdate: OperationUpdate | null) => {
-			if (isNotNull(maybeOperationUpdate)) {
-				const { type, count, status, error } = maybeOperationUpdate
-
-				switch (status) {
-					case OperationStatus.SUCCESS: {
-						let message: TranslationKey
-						switch (type) {
-							case DriveOperationType.Copy:
-								message = "copyItemsSuccess_msg"
-								break
-							case DriveOperationType.Delete:
-								message = "deleteItemsSuccess_msg"
-								break
-							case DriveOperationType.Move:
-								message = "moveItemsSuccess_msg"
-								break
-							case DriveOperationType.Trash:
-								message = "trashItemsSuccess_msg"
-								break
-							case DriveOperationType.Restore:
-								message = "restoreItemsSuccess_msg"
-						}
-						showSnackBar({
-							message: lang.getTranslation(message, {
-								"{count}": String(count),
-							}),
-						})
-						break
-					}
-					case OperationStatus.FAILURE: {
-						handleUncaughtError(assertNotNull(error))
-						break
-					}
-				}
-				this.driveViewModel.operationUpdates(null)
-			}
-		})
+		this.operationUpdatesSubscription = this.driveViewModel.operationUpdates()
+		if (this.operationUpdatesSubscription) {
+			this.operationUpdatesSubscription.map((maybeOperationUpdate: OperationUpdate | null) => {
+				operationUpdateSnackbar(maybeOperationUpdate)
+			})
+		}
 	}
 
 	onremove() {
@@ -160,14 +137,14 @@ export class DriveView extends BaseTopLevelView implements TopLevelView<DriveVie
 		this.viewSlider = new ViewSlider([this.driveNavColumn, this.currentFolderColumn], windowFacade)
 
 		this.shortcuts = [
-			...listSelectionKeyboardShortcuts(MultiselectMode.Enabled, () => this.driveViewModel),
+			...listSelectionKeyboardShortcuts(MultiselectMode.Enabled, () => this.driveViewModel.selectionEvents),
 			{
 				key: Keys.ESC,
 				enabled: () => true,
 				help: "clearFileSelection_action",
 				ctrlOrCmd: false,
 				exec: () => {
-					this.driveViewModel.selectNone()
+					this.driveViewModel.selectionEvents.selectNone()
 				},
 			},
 			{
@@ -188,7 +165,7 @@ export class DriveView extends BaseTopLevelView implements TopLevelView<DriveVie
 				help: "selectAllFiles_action",
 				ctrlOrCmd: true,
 				exec: () => {
-					this.driveViewModel.selectAll()
+					this.driveViewModel.selectionEvents.selectAll()
 				},
 			},
 			{
@@ -310,6 +287,17 @@ export class DriveView extends BaseTopLevelView implements TopLevelView<DriveVie
 						rightView: null,
 						...attrs.header,
 						buttons: renderHeaderButtons(),
+						searchBar: () => {
+							return m(LazyComponent<DriveSearchBarAttrs, DriveQuickSearchBar>, {
+								loader: async () => (await import("./DriveQuickSearchBar.js")).DriveQuickSearchBar,
+								attrs: {
+									loadResults: async (searchQuery) => await this.driveViewModel.getSearchResult(searchQuery),
+									selectResult: (searchQuery, driveItem) => {
+										this.driveViewModel.selectSearchResult(searchQuery, driveItem)
+									},
+								},
+							})
+						},
 					}),
 					bottomNav:
 						styles.isUsingBottomNavigation() && isNotNull(attrs.bottomNav)
@@ -476,27 +464,7 @@ export class DriveView extends BaseTopLevelView implements TopLevelView<DriveVie
 							m(DriveTransferStack, {
 								driveTransfers: this.driveViewModel.transfers(),
 								cancelTransfer: (transferId) => this.driveViewModel.cancelTransfer(transferId),
-								cancelAllTransfers: async () => {
-									const { currentTransfers } = this.driveViewModel.transfers()
-									const activeTransfers = currentTransfers.filter((transfer) => transfer.state === "active" || transfer.state === "waiting")
-									if (isNotEmpty(activeTransfers)) {
-										const ok =
-											activeTransfers.length === 1
-												? true
-												: await Dialog.confirm(
-														lang.getTranslation("confirmCancelTransfers_msg", { "{count}": activeTransfers.length }),
-														"confirmCancelTransfers_action",
-													)
-										if (ok) {
-											for (const { id } of currentTransfers) {
-												this.driveViewModel.cancelTransfer(id)
-											}
-											this.driveViewModel.flushTransfers()
-										}
-									} else {
-										this.driveViewModel.flushTransfers()
-									}
-								},
+								cancelAllTransfers: async () => await this.driveViewModel.cancelAllTransfers(cancelAllTransfersConfirmationDialog),
 							} satisfies DriveTransferStackAttrs),
 						],
 						mobileHeader: () => this.renderMobileHeader(headerAttrs, showMoveItemDialog),
@@ -535,7 +503,7 @@ export class DriveView extends BaseTopLevelView implements TopLevelView<DriveVie
 				message: lang.getTranslation("itemsSelected_label", { "{number}": listState.selectedItems.size }),
 				selected: listState.selectedItems.size === listState.items.length,
 				selectAll: () => this.driveViewModel.toggleSelectAll(),
-				selectNone: () => this.driveViewModel.selectNone(),
+				selectNone: () => this.driveViewModel.toggleSelectAll(),
 			})
 		} else {
 			const useBackButton = isNotEmpty(this.driveViewModel.parents)
@@ -559,7 +527,13 @@ export class DriveView extends BaseTopLevelView implements TopLevelView<DriveVie
 						clickAction: () => this.driveViewModel.enterMultiselect(),
 					}),
 					APP_TYPE === AppType.Drive
-						? null
+						? client.isDriveApp()
+							? m(IconButton, {
+									title: "searchDrive_placeholder",
+									icon: Icons.Search,
+									click: () => this.driveViewModel.goToSearchMobile(),
+								})
+							: null
 						: m(
 								IconButton,
 								attachDropdown({
@@ -586,40 +560,11 @@ export class DriveView extends BaseTopLevelView implements TopLevelView<DriveVie
 			onDropFiles: async (files, folderTransferItems) => {
 				this.driveViewModel.filesDropped(files, folderTransferItems)
 			},
-			currentFolder: this.driveViewModel.currentFolder?.folder ?? null,
-			parents: this.driveViewModel.parents,
-			selection:
-				listState.inMultiselect || listState.selectedItems.size > 0
-					? {
-							type: "multiselect",
-							selectedAll: this.driveViewModel.areAllSelected(),
-							selectedItemCount: listState.selectedItems.size,
-						}
-					: { type: "none" },
+			currentFolder: this.driveViewModel.currentFolder ? toFolderItem(this.driveViewModel.currentFolder.folder, null) : null,
+			parents: this.driveViewModel.parents.map((item) => toFolderItem(item, null)),
 			listState: listState,
-			selectionEvents: {
-				onSelectAll: () => {
-					this.driveViewModel.toggleSelectAll()
-				},
-				onSelectNone: () => {
-					this.driveViewModel.selectNone()
-				},
-				onSelectNext: () => {},
-				onSelectPrevious: () => {},
-				onSingleSelection: (item) => {
-					this.driveViewModel.onSingleSelection(item)
-				},
-				onSingleInclusiveSelection: (item) => {
-					this.driveViewModel.onSingleInclusiveSelection(item)
-				},
-				onSingleExclusiveSelection: (item) => {
-					this.driveViewModel.onSingleExclusiveSelection(item)
-				},
-				onRangeSelectionTowards: (item) => {
-					this.driveViewModel.onRangeSelectionTowards(item)
-				},
-			},
-			loadParents: () => this.driveViewModel.getMoreParents(),
+			selectionEvents: this.driveViewModel.selectionEvents,
+			loadParents: () => this.driveViewModel.getMoreParents().then((parents) => parents.map((p) => toFolderItem(p, null))),
 			onUploadFiles: (_event, dom) => this.onPickFilesForUpload(dom.getBoundingClientRect()),
 			onCreateFolder: () =>
 				showNewFolderDialog(

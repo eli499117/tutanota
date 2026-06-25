@@ -75,7 +75,6 @@ import { SendMailModel } from "../common/mailFunctionality/SendMailModel.js"
 import { OfflineIndicatorViewModel } from "../common/gui/base/OfflineIndicatorViewModel.js"
 import { Router, ScopedThrottledRouter, ThrottledRouter } from "../../ui/ScopedThrottledRouter.js"
 import { DeviceConfig, deviceConfig } from "../common/misc/DeviceConfig.js"
-import { CalendarSearchViewModel } from "./calendar/search/view/CalendarSearchViewModel.js"
 import { SearchRouter } from "../common/search/view/SearchRouter.js"
 import { getEnabledMailAddressesWithUser } from "../common/mailFunctionality/SharedMailUtils.js"
 import { ReceivedGroupInvitationsModel } from "../common/sharing/model/ReceivedGroupInvitationsModel.js"
@@ -108,7 +107,6 @@ import { CredentialFormatMigrator } from "../common/misc/credentials/CredentialF
 import { NativeThemeFacade, ThemeController, WebThemeFacade } from "../../ui/ThemeController.js"
 import type { HtmlSanitizer } from "../common/misc/HtmlSanitizer.js"
 import { theme } from "../../ui/theme.js"
-import { CalendarSearchModel } from "./calendar/search/model/CalendarSearchModel.js"
 import { SearchIndexStateInfo } from "../common/api/worker/search/SearchTypes.js"
 import { CALENDAR_PREFIX } from "../../ui/utils/RouteChange.js"
 import { WorkerRandomizer } from "../common/api/worker/workerInterfaces.js"
@@ -138,13 +136,15 @@ import { GroupType, ShareableGroupType } from "../../entities/sys/Utils"
 import { KdfType } from "../../platform-kit/base/base-crypto/Constants"
 import type { ParsedEventAlarmTuple } from "./calendar/export/CalendarParser"
 import type { AlarmInterval } from "../common/calendar/date/CalendarUtils"
+import { CalendarSearchViewModel } from "./calendar/search/view/CalendarSearchViewModel"
+import { CalendarSearchModel } from "./search/model/CalendarSearchModel"
 
 assertMainOrNode()
 
 class CalendarLocator implements CommonLocator {
 	clientModelInfo!: ClientModelInfo
 	eventController!: EventController
-	search!: CalendarSearchModel
+	calendarSearchModel!: CalendarSearchModel
 	mailboxModel!: MailboxModel
 	contactModel!: ContactModel
 	entityClient!: EntityClient
@@ -242,28 +242,6 @@ class CalendarLocator implements CommonLocator {
 		}
 	}
 
-	async searchViewModelFactory(): Promise<() => CalendarSearchViewModel> {
-		const { CalendarSearchViewModel } = await import("./calendar/search/view/CalendarSearchViewModel.js")
-		const redraw = await this.redraw()
-		const searchRouter = await this.scopedSearchRouter()
-		const calendarEventsRepository = await this.calendarEventsRepository()
-		const calendarModel = await this.calendarModel()
-		return () => {
-			return new CalendarSearchViewModel(
-				searchRouter,
-				this.search,
-				calendarModel,
-				this.logins,
-				this.entityClient,
-				this.eventController,
-				this.calendarFacade,
-				this.progressTracker,
-				calendarEventsRepository,
-				redraw,
-			)
-		}
-	}
-
 	readonly throttledRouter: lazy<Router> = lazyMemoized(() => new ThrottledRouter())
 
 	readonly scopedSearchRouter: lazyAsync<SearchRouter> = lazyMemoized(async () => {
@@ -295,6 +273,7 @@ class CalendarLocator implements CommonLocator {
 			(...args) => this.calendarEventPreviewModel(...args),
 			(...args) => this.calendarContactPreviewModel(...args),
 			await this.calendarModel(),
+			this.calendarSearchModel,
 			await this.calendarEventsRepository(),
 			this.entityClient,
 			this.eventController,
@@ -307,6 +286,7 @@ class CalendarLocator implements CommonLocator {
 			this.groupSettingsModel,
 			this.operationProgressTracker,
 			this.connectivityModel,
+			await this.unscopedSearchRouter(),
 		)
 	})
 
@@ -644,7 +624,7 @@ class CalendarLocator implements CommonLocator {
 		this.progressTracker = new ProgressTracker()
 		this.eventController = new EventController(calendarLocator.logins)
 		this.syncTracker = new SyncTracker()
-		this.search = new CalendarSearchModel(() => this.calendarEventsRepository())
+		this.calendarSearchModel = new CalendarSearchModel(this.eventController, this.calendarEventsRepository, this.progressTracker)
 		this.entityClient = new EntityClient(restInterface, this.clientModelInfo)
 		this.cryptoFacade = cryptoFacade
 		this.cacheStorage = cacheStorage
@@ -1097,6 +1077,25 @@ class CalendarLocator implements CommonLocator {
 		const { GroupSettingsModel } = await import("../common/sharing/model/GroupSettingsModel.js")
 		return new GroupSettingsModel(this.entityClient, this.logins)
 	})
+	async calendarSearchViewModelFactory(): Promise<() => CalendarSearchViewModel> {
+		const { CalendarSearchViewModel } = await import("./calendar/search/view/CalendarSearchViewModel.js")
+		const calendarModel = await this.calendarModel()
+		const redraw = await this.redraw
+		const router = await this.scopedSearchRouter()
+		return () =>
+			new CalendarSearchViewModel(
+				calendarModel,
+				this.logins,
+				this.calendarSearchModel,
+				router,
+				this.eventController,
+				this.entityClient,
+				this.mailboxModel,
+				(...args) => this.calendarEventModel(...args),
+				(...args) => this.calendarEventPreviewModel(...args),
+				redraw,
+			)
+	}
 }
 
 export type ICalendarLocator = Readonly<CalendarLocator>

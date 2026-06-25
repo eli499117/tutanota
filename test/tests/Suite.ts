@@ -258,7 +258,8 @@ import "./crypto/ParsedCiphertextTest.js"
 import "./crypto/ValueDecryptorTest.js"
 import "./drive/DriveFilePickerTests.js"
 import "./drive/DriveTransferStackTest.js"
-
+import "./calendar/CalendarSearchTest.js"
+import "./drive/DriveSearchModelTest.js"
 import * as td from "testdouble"
 import { EntropySource } from "../../src/platform-kit/crypto"
 

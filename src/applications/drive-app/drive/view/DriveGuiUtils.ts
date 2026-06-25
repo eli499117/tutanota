@@ -1,17 +1,23 @@
-import { DropdownButtonAttrs, DropdownChildAttrs } from "../../../../ui/base/Dropdown"
-import { lang, Translation } from "../../../../ui/utils/LanguageViewModel"
+import { DomRectReadOnlyPolyfilled, Dropdown, DropdownButtonAttrs, DropdownChildAttrs } from "../../../../ui/base/Dropdown"
+import { lang, Translation, TranslationKey } from "../../../../ui/utils/LanguageViewModel"
 import { Dialog } from "../../../../ui/base/Dialog"
 import { DriveFolderType } from "../../../common/api/worker/facades/lazy/DriveFacade"
-import { FileFolderItem, FolderFolderItem, FolderItem, FolderItemId } from "./DriveUtils"
+import { DriveOperationType, FileFolderItem, FolderFolderItem, FolderItem, FolderItemId, OperationUpdate } from "./DriveUtils"
 import { DropType } from "../../../../ui/base/GuiUtils"
 import { Icons } from "../../../../ui/base/icons/Icons"
 import { styles } from "../../../../ui/styles"
 import { DriveFolder } from "@tutao/entities/drive"
 import { getFileBaseNameAndExtensions } from "../../../../ui/utils/FileUtils"
-import { isBrowser, isDesktop } from "@tutao/app-env"
-import { isNotNull } from "@tutao/utils"
+import { isBrowser, isDesktop, OperationStatus } from "@tutao/app-env"
+import { assertNotNull, isNotNull } from "@tutao/utils"
 import { FileActions } from "./DriveFolderContentEntry"
 import { DriveSelectedItemsActions } from "./DriveFolderNav"
+import { modal } from "../../../../ui/base/Modal"
+import { ListState } from "../../../../ui/base/List"
+import { showSnackBar } from "../../../../ui/base/SnackBar"
+import { handleUncaughtError } from "../../../common/misc/ErrorHandler"
+import { ListItemSelectionCallbacks } from "../../../../ui/base/ListUtils"
+import { DriveTransferState } from "./DriveTransferController"
 
 export function newItemActions({
 	onUploadFiles,
@@ -326,6 +332,71 @@ export function getSelectionContextActions(selectionActions: DriveSelectedItemsA
 	}
 
 	return actions
+}
+
+export async function cancelAllTransfersConfirmationDialog(activeTransfers: readonly DriveTransferState[]): Promise<boolean> {
+	return await Dialog.confirm(lang.getTranslation("confirmCancelTransfers_msg", { "{count}": activeTransfers.length }), "confirmCancelTransfers_action")
+}
+
+export function driveItemContextMenu(
+	selectionEvents: ListItemSelectionCallbacks<FolderItem>,
+	selectedItemsActions: DriveSelectedItemsActions,
+	fileActions: FileActions,
+	listState: ListState<FolderItem>,
+	item: FolderItem,
+	e: MouseEvent,
+) {
+	let contextActions: DropdownChildAttrs[]
+
+	if (listState.selectedItems.has(item) && listState.inMultiselect && listState.selectedItems.size > 1) {
+		contextActions = getSelectionContextActions(selectedItemsActions)
+	} else {
+		selectionEvents.onSingleSelection(item)
+
+		// Nothing is selected, open the context menu for the item that received the event.
+		contextActions = getFileContextActions(item, fileActions)
+	}
+
+	const dropdown = new Dropdown(() => contextActions, 300)
+	dropdown.setOrigin(new DomRectReadOnlyPolyfilled(e.clientX, e.clientY, 0, 0))
+	modal.displayUnique(dropdown, false)
+}
+export function operationUpdateSnackbar(maybeOperationUpdate: OperationUpdate | null) {
+	if (isNotNull(maybeOperationUpdate)) {
+		const { type, count, status, error } = maybeOperationUpdate
+
+		switch (status) {
+			case OperationStatus.SUCCESS: {
+				let message: TranslationKey
+				switch (type) {
+					case DriveOperationType.Copy:
+						message = "copyItemsSuccess_msg"
+						break
+					case DriveOperationType.Delete:
+						message = "deleteItemsSuccess_msg"
+						break
+					case DriveOperationType.Move:
+						message = "moveItemsSuccess_msg"
+						break
+					case DriveOperationType.Trash:
+						message = "trashItemsSuccess_msg"
+						break
+					case DriveOperationType.Restore:
+						message = "restoreItemsSuccess_msg"
+				}
+				showSnackBar({
+					message: lang.getTranslation(message, {
+						"{count}": String(count),
+					}),
+				})
+				break
+			}
+			case OperationStatus.FAILURE: {
+				handleUncaughtError(assertNotNull(error))
+				break
+			}
+		}
+	}
 }
 
 export function isMobileDriveLayout(): boolean {

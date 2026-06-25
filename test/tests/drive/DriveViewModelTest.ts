@@ -38,6 +38,7 @@ o.spec("DriveViewModel", function () {
 	let windowFacade: WindowFacade
 	let windowCloseConfirmation: () => Promise<boolean>
 	let allTransfersDoneNotification = func() as () => void
+	let clipboardController: DriveClipboardController
 
 	const rootIds: Readonly<DriveRootFolders> = {
 		root: ["RootListID", "RootElementID"],
