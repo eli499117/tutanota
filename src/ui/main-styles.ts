@@ -1538,6 +1538,13 @@ export class MainStyles {
 					"max-width": px(component_size.button_height_sm),
 					"max-height": px(component_size.button_height_sm),
 				},
+				".icon-button-extra-small": {
+					"border-radius": "25%",
+					width: px(component_size.button_height_xs),
+					height: px(component_size.button_height_xs),
+					"max-width": px(component_size.button_height_xs),
+					"max-height": px(component_size.button_height_xs),
+				},
 				".center-h": {
 					margin: "0 auto",
 				},

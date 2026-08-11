@@ -3,6 +3,9 @@ import m from "mithril"
 import { colorForBg } from "./GuiUtils.js"
 import { size } from "../size.js"
 import { isDarkTheme, theme } from "../theme.js"
+import { Icons } from "./icons/Icons"
+import { IconButton } from "./IconButton"
+import { ButtonSize } from "./ButtonSize"
 
 const supportsRelativeHslColors = typeof CSS !== "undefined" ? CSS.supports("color", `hsl(from #ccc h calc(min(50, s)) l)`) : false
 
@@ -21,7 +24,7 @@ function limitedSaturationColor(color: string): string {
 /**
  * Displays a mail label with color and name.
  */
-export const Label = pureComponent(function Label({ text, color }: { text: string; color: string | null }) {
+export const Label = pureComponent(function Label({ text, color, cancelable }: { text: string; color: string | null; cancelable: boolean | null }) {
 	const labelColor = getLabelColor(color)
 	return m(
 		"span.small.text-center.text-ellipsis.border-radius-8",
@@ -35,5 +38,13 @@ export const Label = pureComponent(function Label({ text, color }: { text: strin
 			},
 		},
 		text,
+		cancelable
+			? m(IconButton, {
+					icon: Icons.X,
+					label: "delete_action",
+					click: () => {},
+					size: ButtonSize.ExtraSmall,
+				})
+			: "",
 	)
 })
