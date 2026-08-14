@@ -34,8 +34,14 @@ public final class MobilePaymentsFacadeReceiveDispatcher: Sendable {
 				customerIdBytes
 			)
 			return toJson(result)
-		case "isAppStoreRenewalEnabled":
-			let result = try await self.facade.isAppStoreRenewalEnabled(
+		case "queryPlaystorePaymentSubscriptionOwnership":
+			let customerIdBytes = try! JSONDecoder().decode(DataWrapper?.self, from: arg[0].data(using: .utf8)!)
+			let result = try await self.facade.queryPlaystorePaymentSubscriptionOwnership(
+				customerIdBytes
+			)
+			return toJson(result)
+		case "isExternalSubscriptionRenewalEnabled":
+			let result = try await self.facade.isExternalSubscriptionRenewalEnabled(
 			)
 			return toJson(result)
 		default:
