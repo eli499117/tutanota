@@ -88,7 +88,10 @@ export class LoginView extends BaseTopLevelView implements TopLevelView<LoginVie
 		return m(
 			"#login-view.main-view.flex.col.nav-bg",
 			{
-				oncreate: () => windowFacade.addKeyboardSizeListener(this.keyboardListener),
+				oncreate: () => {
+					locator.mobilePaymentsFacade.getPlanPrices()
+					windowFacade.addKeyboardSizeListener(this.keyboardListener)
+				},
 				onremove: () => windowFacade.removeKeyboardSizeListener(this.keyboardListener),
 				style: {
 					marginBottom: EnvProvider.get().isAndroidApp() ? `calc(var(--safe-area-inset-bottom) + ${this.keyboardHeight}px)` : px(this.keyboardHeight),
