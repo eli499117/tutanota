@@ -2,22 +2,29 @@ import { Coordinate2D, SwipeHandler } from "./SwipeHandler.js"
 import { animations, DefaultAnimationTime, opacity, transform, TransformEnum } from "../animation/Animations.js"
 import { ease } from "../animation/Easing.js"
 import { ListRow, ListSwipeDecision, ViewHolder } from "./List.js"
-import { ACTION_DISTANCE } from "./ListUtils.js"
+import { component_size } from "../size.js"
+
+const HORIZONTAL_ACTION_DISTANCE = 150
+const VERTICAL_ACTION_DISTANCE = 50
 
 /** Detects swipe gestures for list elements. On mobile some lists have actions on swiping, e.g. deleting an email. */
 export class ListSwipeHandler<ElementType, VH extends ViewHolder<ElementType>> extends SwipeHandler {
 	private virtualElement: ListRow<ElementType, VH> | null = null
 	private xoffset!: number
+	private yoffset: number = 0
 
 	constructor(
 		touchArea: HTMLElement,
 		private readonly config: {
 			domSwipeSpacerLeft: () => HTMLElement
 			domSwipeSpacerRight: () => HTMLElement
+			domSwipeSpacerDown: () => HTMLElement
+			listElement: () => HTMLElement | null
 			width: () => number
 			getRowForPosition: (clientCoordinates: Coordinate2D) => ListRow<ElementType, VH> | null
 			onSwipeLeft: (entity: ElementType) => Promise<ListSwipeDecision>
 			onSwipeRight: (entity: ElementType) => Promise<ListSwipeDecision>
+			onSwipeDown: () => Promise<void>
 			isSwipeDisabledForEntity: (entity: ElementType) => boolean
 		},
 	) {
@@ -37,7 +44,7 @@ export class ListSwipeHandler<ElementType, VH extends ViewHolder<ElementType>> e
 		// Animate the row with following touch
 		window.requestAnimationFrame(() => {
 			// Do not animate the swipe gesture more than necessary
-			this.xoffset = xDelta < 0 ? Math.max(xDelta, -ACTION_DISTANCE) : Math.min(xDelta, ACTION_DISTANCE)
+			this.xoffset = xDelta < 0 ? Math.max(xDelta, -HORIZONTAL_ACTION_DISTANCE) : Math.min(xDelta, HORIZONTAL_ACTION_DISTANCE)
 
 			if (!this.isAnimating && ve && ve.domElement && ve.entity) {
 				ve.domElement.style.transform = `translateX(${this.xoffset}px) translateY(${ve.top}px)`
@@ -53,16 +60,16 @@ export class ListSwipeHandler<ElementType, VH extends ViewHolder<ElementType>> e
 			this.virtualElement &&
 			this.virtualElement.entity &&
 			!this.config.isSwipeDisabledForEntity(this.virtualElement.entity) &&
-			Math.abs(delta.x) > ACTION_DISTANCE
+			Math.abs(delta.x) > HORIZONTAL_ACTION_DISTANCE
 		) {
 			// the gesture is completed
-			return this.finish(this.virtualElement, this.virtualElement.entity, delta)
+			return this.finishHorizontal(this.virtualElement, this.virtualElement.entity, delta)
 		} else {
 			return this.reset(delta)
 		}
 	}
 
-	private async finish(
+	private async finishHorizontal(
 		virtualElement: ListRow<ElementType, VH>,
 		entity: ElementType,
 		delta: {
@@ -172,7 +179,87 @@ export class ListSwipeHandler<ElementType, VH extends ViewHolder<ElementType>> e
 		return this.virtualElement
 	}
 
+	onVerticalDrag(yDelta: number) {
+		super.onVerticalDrag(yDelta)
+		// get it *before* raf so that we don't pick an element after reset() again
+		const ve = this.getVirtualElement()
+		if (!ve || !ve.entity || this.config.isSwipeDisabledForEntity(ve.entity)) {
+			// reset yoffset to ensure that end animation isn't shown
+			this.yoffset = 0
+			return
+		}
+		const maxPull = this.width() * 0.5
+		this.yoffset = yDelta < 0 ? Math.min(yDelta, 0) : Math.min(yDelta, maxPull)
+
+		// Animate the list and down spacer
+		window.requestAnimationFrame(() => {
+			if (!this.isAnimating) {
+				const listElement = this.config.listElement()
+				const downSpacer = this.config.domSwipeSpacerDown()
+				if (listElement) {
+					// Move the entire list down
+					listElement.style.transform = `translateY(${this.yoffset}px)`
+				}
+				downSpacer.style.transform = `translateY(${this.yoffset - component_size.list_row_height}px)`
+			}
+		})
+	}
+
+	async onVerticalGestureCompleted(delta: { x: number; y: number }): Promise<unknown> {
+		if (this.virtualElement?.entity && !this.config.isSwipeDisabledForEntity(this.virtualElement.entity) && this.yoffset > VERTICAL_ACTION_DISTANCE) {
+			// the gesture is completed
+			return this.finishVertical(delta)
+		} else {
+			return this.reset(delta)
+		}
+	}
+
+	private async finishVertical(delta: { x: number; y: number }): Promise<void> {
+		if (this.yoffset === 0) {
+			return
+		}
+		try {
+			await this.config.onSwipeDown()
+			this.yoffset = 0
+			const listElement = this.config.listElement()
+			const downSpacer = this.config.domSwipeSpacerDown()
+			if (listElement) {
+				listElement.style.transform = `translateY(0)`
+			}
+			downSpacer.style.transform = `translateY(-${component_size.list_row_height}px)`
+		} catch (e) {
+			console.error("Swipe down failed", e)
+			await this.resetVertical()
+		}
+		this.virtualElement = null
+	}
+
+	private resetVertical(): Promise<unknown> {
+		const listElement = this.config.listElement()
+		const downSpacer = this.config.domSwipeSpacerDown()
+		if (listElement) {
+			return Promise.all([
+				animations.add(listElement, transform(TransformEnum.TranslateY, this.yoffset, 0), {
+					easing: ease.inOut,
+					duration: 200,
+				}),
+				animations.add(
+					downSpacer,
+					transform(TransformEnum.TranslateY, this.yoffset - component_size.list_row_height, -component_size.list_row_height),
+					{ easing: ease.inOut, duration: 200 },
+				),
+			]).then(() => {
+				this.yoffset = 0
+			})
+		}
+		this.yoffset = 0
+		return Promise.resolve()
+	}
+
 	reset(delta: { x: number; y: number }): Promise<unknown> {
+		if (this.yoffset !== 0) {
+			return this.resetVertical()
+		}
 		try {
 			if (this.xoffset !== 0) {
 				const ve = this.virtualElement

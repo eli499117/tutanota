@@ -6,7 +6,6 @@ import { ListState, MultiselectMode } from "./List.js"
 import { Children } from "mithril"
 import { SearchToken, splitTextForHighlighting } from "../utils/QueryTokenUtils"
 
-export const ACTION_DISTANCE = 150
 export const PageSize = 100
 
 /**
