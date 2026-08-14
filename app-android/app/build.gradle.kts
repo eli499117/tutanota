@@ -43,12 +43,14 @@ android {
 			enableV2Signing = true
 		}
 	}
-	flavorDimensions("releaseType")
+	flavorDimensions.add("releaseType")
 	productFlavors {
 		create("tutao") {
+			dimension = "releaseType"
 			signingConfig = signingConfigs.getByName("release")
 		}
 		create("fdroid") {
+			dimension = "releaseType"
 		}
 	}
 	buildTypes {
@@ -159,6 +161,10 @@ dependencies {
 
 
 	implementation(files("../libs/sqlcipher-android.aar"))
+
+	// we don't need this for f-droid
+	add("tutaoImplementation", "com.android.billingclient:billing-ktx:9.1.0")
+	//tutaoImplementation("com.android.billingclient:billing-ktx:9.1.0")
 
 
 	implementation(libs.androidx.lifecycle.runtime.ktx)

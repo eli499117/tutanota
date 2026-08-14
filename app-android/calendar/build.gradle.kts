@@ -187,6 +187,9 @@ dependencies {
 	// For Kotlin use kapt instead of annotationProcessor. we should migrate to ksp
 	kapt(libs.androidx.room.compiler)
 
+	// we don't need this for f-droid
+	add("tutaoImplementation", "com.android.billingclient:billing-ktx:9.1.0")
+	// tutaoImplementation("com.android.billingclient:billing-ktx:9.1.0")
 
 	implementation(files("../libs/sqlcipher-android.aar"))
 

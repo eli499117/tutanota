@@ -15,8 +15,6 @@ plugins {
 
 group = "de.tutao"
 
-android.flavorDimensions.add("releaseType")
-
 android {
 	namespace = "de.tutao.tutashared"
 	compileSdk = 36
@@ -41,6 +39,16 @@ android {
 
 	buildFeatures {
 		buildConfig = true
+	}
+
+	flavorDimensions.add("releaseType")
+	productFlavors {
+		create("tutao") {
+			dimension = "releaseType"
+		}
+		create("fdroid") {
+			dimension = "releaseType"
+		}
 	}
 
 	buildTypes {
@@ -145,7 +153,7 @@ dependencies {
 	implementation(libs.androidx.datastore.preferences)
 
 	// we don't need this for f-droid
-	tutaoImplementation('com.android.billingclient:billing-ktx:8.3.0')
+	add("tutaoImplementation", "com.android.billingclient:billing-ktx:8.3.0")
 
 	implementation(libs.androidx.room.ktx)
 	// For Kotlin use kapt instead of annotationProcessor

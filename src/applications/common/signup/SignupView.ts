@@ -241,6 +241,7 @@ export class SignupView extends BaseTopLevelView implements TopLevelView<SignupV
 	}
 
 	async oncreate({ attrs }: Vnode<SignupViewAttrs>) {
+		await locator.mobilePaymentsFacade.getPlanPrices()
 		const activeTests = await attrs.usageTestModel.loadActiveUsageTests()
 		attrs.usageTestController.setTests(activeTests)
 		await this.wizardViewModel.init()
