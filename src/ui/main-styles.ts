@@ -269,6 +269,10 @@ export class MainStyles {
 					"border-style": "solid",
 					"border-width": "2px",
 				},
+				".border-md": {
+					"border-style": "solid",
+					"border-width": "4px",
+				},
 				".border-bottom-none": {
 					"border-bottom": "none",
 				},

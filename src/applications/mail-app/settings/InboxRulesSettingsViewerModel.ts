@@ -62,6 +62,10 @@ export class InboxRulesSettingsViewerModel {
 		await this.inboxRuleModel.updateInboxRuleOrder(this.orderedInboxRules)
 	}
 
+	async saveInboxRule(rule: ExpandedInboxRule) {
+		await this.inboxRuleModel.updateInboxRule(rule)
+	}
+
 	async deleteInboxRule(rule: ExpandedInboxRule) {
 		await this.inboxRuleModel.deleteInboxRule(rule)
 	}
@@ -89,6 +93,14 @@ export class InboxRulesSettingsViewerModel {
 	async moveRuleToLast(rule: ExpandedInboxRule, index: number) {
 		this.orderedInboxRules.splice(index, 1)
 		this.orderedInboxRules.push(rule)
+		await this.saveInboxRuleOrder()
+	}
+
+	async moveRuleToIndex(rule: ExpandedInboxRule, currentIndex: number, insertAtIndex: number) {
+		if (currentIndex === insertAtIndex || currentIndex + 1 === insertAtIndex) return
+
+		this.orderedInboxRules.splice(insertAtIndex, 0, rule)
+		this.orderedInboxRules.splice(currentIndex > insertAtIndex ? currentIndex + 1 : currentIndex, 1)
 		await this.saveInboxRuleOrder()
 	}
 }
