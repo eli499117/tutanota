@@ -41,6 +41,8 @@ import { ButtonSize } from "../../../ui/base/ButtonSize"
 import { SelectorItem } from "../../../ui/base/DropDownSelector"
 import { getInboxRuleConditionTypeNameMapping, getInboxRuleResultTypeNameMapping } from "../mail/model/InboxRuleHandler"
 import { InboxRuleModel } from "../mail/model/InboxRuleModel"
+import { LabelState } from "../mail/model/MailModel"
+import { DropDownLabels, DropDrownLabelsAttrs } from "../mail/view/DropDownLabels"
 
 assertMainOrNode()
 
@@ -65,6 +67,12 @@ interface MoveTargetFolder {
 	value: MailSet
 }
 
+export interface AssignedLabels {
+	displayName: string
+	label: MailSet
+	state: LabelState
+}
+
 export async function show(
 	mailBoxDetail: MailboxDetail,
 	inboxRuleModel: InboxRuleModel,
@@ -80,6 +88,13 @@ export async function show(
 				name: getIndentedFolderNameForDropdown(folderInfo),
 				value: folderInfo.mailSet,
 			}
+		})
+
+		const labels = mailLocator.mailModel.getLabelsByGroupId(assertNotNull(mailBoxDetail.mailbox._ownerGroup))
+		const labelsSet: AssignedLabels[] = Array.from(labels.values()).map((label) => {
+			const displayName = label.name
+			const state: LabelState = LabelState.NotApplied
+			return { displayName, label, state }
 		})
 
 		const inboxRuleName: stream<string> = stream(originalInboxRule?.name ?? "")
@@ -241,7 +256,7 @@ export async function show(
 						],
 					),
 					m(".flex.items-center.justify-end", [
-						ruleValueInput !== null ? [m(".mlr-16", "="), ruleValueInput(targetFolders)] : null,
+						ruleValueInput !== null ? [m(".mlr-16", "="), ruleValueInput(labelsSet)] : null,
 						!isFirstResult
 							? m(
 									".ml-4",
@@ -512,23 +527,24 @@ function getRuleConditionValueInputByType(ruleCondition: InboxRuleConditionField
 function getRuleResultValueInputByType(ruleResult: InboxRuleResultField) {
 	switch (ruleResult.type()) {
 		case InboxRuleResultType.MOVE:
-			return (targetFolders: MoveTargetFolder[]) =>
+			return (targetFolders: AssignedLabels[]) =>
 				m(DropDownSelectorNew, {
-					items: targetFolders,
+					items: [],
 					selectedValue: ruleResult.value(),
 					selectedValueDisplay: getMailSetName(assertNotNull(ruleResult.value())),
 					selectionChangedHandler: ruleResult.value,
 					class: "",
 				})
 		case InboxRuleResultType.LABEL:
-			return (targetFolders: MoveTargetFolder[]) =>
-				m(DropDownSelectorNew, {
+			return (targetFolders: AssignedLabels[]) =>
+				m(DropDownLabels, {
+					label: "assignLabel_action",
 					items: targetFolders,
-					selectedValue: lang.getTranslationText("labels_label"),
-					selectedValueDisplay: lang.getTranslationText("labels_label"),
-					selectionChangedHandler: ruleResult.value,
-					class: "",
-				})
+					icon: {
+						icon: Icons.LabelFilled,
+						color: theme.on_surface_variant,
+					},
+				} satisfies DropDrownLabelsAttrs)
 		case InboxRuleResultType.EXCLUDE_SPAM:
 		case InboxRuleResultType.READ:
 			return null
