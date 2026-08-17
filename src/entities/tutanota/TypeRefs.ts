@@ -1,17 +1,15 @@
 import { create } from "../../platform-kit/meta/EntityUtils.js"
 import { TypeRef } from "../../platform-kit/meta/TypeRef.js"
-import { ElementId, ListElementId } from "@tutao/meta"
+import { ListElementId, ElementId } from "@tutao/meta"
 import { default as typeModels } from "./TypeModels.js"
-import {
-	Blob,
-	BlobReferenceTokenWrapper,
-	BucketKey,
-	DateWrapper,
-	GeneratedIdWrapper,
-	IdTupleWrapper,
-	InstanceSessionKey,
-	StringWrapper
-} from "../sys/TypeRefs.js"
+import { Blob } from '../sys/TypeRefs.js'
+import { BucketKey } from '../sys/TypeRefs.js'
+import { BlobReferenceTokenWrapper } from '../sys/TypeRefs.js'
+import { DateWrapper } from '../sys/TypeRefs.js'
+import { StringWrapper } from '../sys/TypeRefs.js'
+import { GeneratedIdWrapper } from '../sys/TypeRefs.js'
+import { IdTupleWrapper } from '../sys/TypeRefs.js'
+import { InstanceSessionKey } from '../sys/TypeRefs.js'
 
 export const SubfilesTypeRef: TypeRef<Subfiles> = new TypeRef("tutanota", 11)
 
@@ -510,6 +508,10 @@ export type ExternalUserDataParams = {
 	externalMailEncMailBoxSessionKey: Uint8Array<ArrayBuffer>;
 	kdfVersion: NumberString;
 	internalMailGroupKeyVersion: NumberString;
+	externalMailEncMailGroupInfoInstanceKey: null | Uint8Array<ArrayBuffer>;
+	externalMailGroupInfoInstanceKeyVersion: null | NumberString;
+	externalUserEncUserGroupInfoInstanceKey: null | Uint8Array<ArrayBuffer>;
+	externalUserGroupInfoInstanceKeyVersion: null | NumberString;
 
 	userGroupData: CreateExternalUserGroupData;
 }
@@ -530,6 +532,10 @@ export type ExternalUserData = {
 	externalMailEncMailBoxSessionKey: Uint8Array<ArrayBuffer>;
 	kdfVersion: NumberString;
 	internalMailGroupKeyVersion: NumberString;
+	externalMailEncMailGroupInfoInstanceKey: null | Uint8Array<ArrayBuffer>;
+	externalMailGroupInfoInstanceKeyVersion: null | NumberString;
+	externalUserEncUserGroupInfoInstanceKey: null | Uint8Array<ArrayBuffer>;
+	externalUserGroupInfoInstanceKeyVersion: null | NumberString;
 
 	userGroupData: CreateExternalUserGroupData;
 }
@@ -866,10 +872,9 @@ export function createCreateMailFolderData(values: CreateMailFolderDataParams): 
 export type CreateMailFolderDataParams = {
 
 
-	folderName: null | string;
+	folderName: string;
 
 	parentFolder: null | IdTuple;
-	mailSet: null | MailSetTransferAggregatedType;
 }
 
 export type CreateMailFolderData = {
@@ -878,13 +883,12 @@ export type CreateMailFolderData = {
 	_original?: CreateMailFolderData
 
 	_format: NumberString;
-	folderName: null | string;
-	ownerEncSessionKey: null | Uint8Array<ArrayBuffer>;
+	folderName: string;
+	ownerEncSessionKey: Uint8Array<ArrayBuffer>;
 	ownerGroup: null | Id;
-	ownerKeyVersion: null | NumberString;
+	ownerKeyVersion: NumberString;
 
 	parentFolder: null | IdTuple;
-	mailSet: null | MailSetTransferAggregatedType;
 }
 export const CreateMailFolderReturnTypeRef: TypeRef<CreateMailFolderReturn> = new TypeRef("tutanota", 455)
 
@@ -2063,10 +2067,14 @@ export type SharedGroupDataParams = {
 	sessionEncSharedGroupName: Uint8Array<ArrayBuffer>;
 	sessionEncInviterName: Uint8Array<ArrayBuffer>;
 	bucketEncInvitationSessionKey: Uint8Array<ArrayBuffer>;
-	sharedGroupEncInviterGroupInfoKey: Uint8Array<ArrayBuffer>;
-	sharedGroupEncSharedGroupInfoKey: Uint8Array<ArrayBuffer>;
+	sharedGroupEncInviterGroupInfoSessionKey: Uint8Array<ArrayBuffer>;
+	sharedGroupEncSharedGroupInfoSessionKey: Uint8Array<ArrayBuffer>;
 	sharedGroup: Id;
 	sharedGroupKeyVersion: NumberString;
+	sharedGroupEncInviterGroupInfoInstanceKey: null | Uint8Array<ArrayBuffer>;
+	inviterGroupInfoInstanceKeyVersion: null | NumberString;
+	sharedGroupEncSharedGroupInfoInstanceKey: null | Uint8Array<ArrayBuffer>;
+	sharedGroupInfoInstanceKeyVersion: null | NumberString;
 }
 
 export type SharedGroupData = {
@@ -2079,10 +2087,14 @@ export type SharedGroupData = {
 	sessionEncSharedGroupName: Uint8Array<ArrayBuffer>;
 	sessionEncInviterName: Uint8Array<ArrayBuffer>;
 	bucketEncInvitationSessionKey: Uint8Array<ArrayBuffer>;
-	sharedGroupEncInviterGroupInfoKey: Uint8Array<ArrayBuffer>;
-	sharedGroupEncSharedGroupInfoKey: Uint8Array<ArrayBuffer>;
+	sharedGroupEncInviterGroupInfoSessionKey: Uint8Array<ArrayBuffer>;
+	sharedGroupEncSharedGroupInfoSessionKey: Uint8Array<ArrayBuffer>;
 	sharedGroup: Id;
 	sharedGroupKeyVersion: NumberString;
+	sharedGroupEncInviterGroupInfoInstanceKey: null | Uint8Array<ArrayBuffer>;
+	inviterGroupInfoInstanceKeyVersion: null | NumberString;
+	sharedGroupEncSharedGroupInfoInstanceKey: null | Uint8Array<ArrayBuffer>;
+	sharedGroupInfoInstanceKeyVersion: null | NumberString;
 }
 export const GroupInvitationPostDataTypeRef: TypeRef<GroupInvitationPostData> = new TypeRef("tutanota", 1002)
 
@@ -2142,9 +2154,11 @@ export type GroupInvitationPutDataParams = {
 
 
 	userGroupEncGroupKey: Uint8Array<ArrayBuffer>;
-	sharedGroupEncInviteeGroupInfoKey: Uint8Array<ArrayBuffer>;
+	sharedGroupEncInviteeGroupInfoSessionKey: Uint8Array<ArrayBuffer>;
 	userGroupKeyVersion: NumberString;
 	sharedGroupKeyVersion: NumberString;
+	sharedGroupEncInviteeGroupInfoInstanceKey: null | Uint8Array<ArrayBuffer>;
+	inviteeGroupInfoInstanceKeyVersion: null | NumberString;
 
 	receivedInvitation: IdTuple;
 }
@@ -2155,9 +2169,11 @@ export type GroupInvitationPutData = {
 
 	_format: NumberString;
 	userGroupEncGroupKey: Uint8Array<ArrayBuffer>;
-	sharedGroupEncInviteeGroupInfoKey: Uint8Array<ArrayBuffer>;
+	sharedGroupEncInviteeGroupInfoSessionKey: Uint8Array<ArrayBuffer>;
 	userGroupKeyVersion: NumberString;
 	sharedGroupKeyVersion: NumberString;
+	sharedGroupEncInviteeGroupInfoInstanceKey: null | Uint8Array<ArrayBuffer>;
+	inviteeGroupInfoInstanceKeyVersion: null | NumberString;
 
 	receivedInvitation: IdTuple;
 }
@@ -3358,8 +3374,7 @@ export type ManageLabelServicePostInParams = {
 
 
 
-	data: null | ManageLabelServiceLabelData;
-	mailSet: null | MailSetTransferAggregatedType;
+	data: ManageLabelServiceLabelData;
 }
 
 export type ManageLabelServicePostIn = {
@@ -3368,12 +3383,11 @@ export type ManageLabelServicePostIn = {
 	_original?: ManageLabelServicePostIn
 
 	_format: NumberString;
-	ownerEncSessionKey: null | Uint8Array<ArrayBuffer>;
-	ownerKeyVersion: null | NumberString;
+	ownerEncSessionKey: Uint8Array<ArrayBuffer>;
+	ownerKeyVersion: NumberString;
 	ownerGroup: Id;
 
-	data: null | ManageLabelServiceLabelData;
-	mailSet: null | MailSetTransferAggregatedType;
+	data: ManageLabelServiceLabelData;
 }
 export const ManageLabelServicePostOutTypeRef: TypeRef<ManageLabelServicePostOut> = new TypeRef("tutanota", 1490)
 
@@ -3407,8 +3421,7 @@ export type ManageLabelServicePutInParams = {
 
 
 	label: IdTuple;
-	data: null | ManageLabelServiceLabelData;
-	mailSet: null | MailSetTransferAggregatedType;
+	data: ManageLabelServiceLabelData;
 }
 
 export type ManageLabelServicePutIn = {
@@ -3419,8 +3432,7 @@ export type ManageLabelServicePutIn = {
 	_format: NumberString;
 
 	label: IdTuple;
-	data: null | ManageLabelServiceLabelData;
-	mailSet: null | MailSetTransferAggregatedType;
+	data: ManageLabelServiceLabelData;
 }
 export const ManageLabelServiceDeleteInTypeRef: TypeRef<ManageLabelServiceDeleteIn> = new TypeRef("tutanota", 1500)
 
@@ -4966,31 +4978,4 @@ export type MailTransferAggregatedType = {
 
 	sender: MailAddressTransferAggregatedType;
 	firstRecipient: null | MailAddressTransferAggregatedType;
-}
-export const MailSetTransferAggregatedTypeTypeRef: TypeRef<MailSetTransferAggregatedType> = new TypeRef("tutanota", 2037)
-
-export function createMailSetTransferAggregatedType(values: MailSetTransferAggregatedTypeParams): MailSetTransferAggregatedType {
-    return Object.assign(create(typeModels[MailSetTransferAggregatedTypeTypeRef.typeId], MailSetTransferAggregatedTypeTypeRef), values)
-}
-
-export type MailSetTransferAggregatedTypeParams = {
-
-
-	name: string;
-	color: null | string;
-
-	parentFolder: null | IdTuple;
-}
-
-export type MailSetTransferAggregatedType = {
-	_type: TypeRef<MailSetTransferAggregatedType>;
-	_original?: MailSetTransferAggregatedType
-
-	_id: Id;
-	_ownerEncSessionKey: null | Uint8Array<ArrayBuffer>;
-	_ownerKeyVersion: null | NumberString;
-	name: string;
-	color: null | string;
-
-	parentFolder: null | IdTuple;
 }

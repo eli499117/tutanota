@@ -558,6 +558,16 @@ pub struct ExternalUserData {
 	pub kdfVersion: i64,
 	#[serde(rename = "1429")]
 	pub internalMailGroupKeyVersion: i64,
+	#[serde(rename = "2043")]
+	#[serde(with = "serde_bytes")]
+	pub externalMailEncMailGroupInfoInstanceKey: Option<Vec<u8>>,
+	#[serde(rename = "2044")]
+	pub externalMailGroupInfoInstanceKeyVersion: Option<i64>,
+	#[serde(rename = "2045")]
+	#[serde(with = "serde_bytes")]
+	pub externalUserEncUserGroupInfoInstanceKey: Option<Vec<u8>>,
+	#[serde(rename = "2046")]
+	pub externalUserGroupInfoInstanceKeyVersion: Option<i64>,
 	#[serde(rename = "151")]
 	pub userGroupData: CreateExternalUserGroupData,
 }
@@ -907,18 +917,16 @@ pub struct CreateMailFolderData {
 	#[serde(rename = "451")]
 	pub _format: i64,
 	#[serde(rename = "453")]
-	pub folderName: Option<String>,
+	pub folderName: String,
 	#[serde(rename = "454")]
 	#[serde(with = "serde_bytes")]
-	pub ownerEncSessionKey: Option<Vec<u8>>,
+	pub ownerEncSessionKey: Vec<u8>,
 	#[serde(rename = "1268")]
 	pub ownerGroup: Option<GeneratedId>,
 	#[serde(rename = "1414")]
-	pub ownerKeyVersion: Option<i64>,
+	pub ownerKeyVersion: i64,
 	#[serde(rename = "452")]
 	pub parentFolder: Option<IdTupleGenerated>,
-	#[serde(rename = "2043")]
-	pub mailSet: Option<MailSetTransferAggregatedType>,
 
 	#[serde(default)]
 	pub _errors: Errors,
@@ -2144,14 +2152,24 @@ pub struct SharedGroupData {
 	pub bucketEncInvitationSessionKey: Vec<u8>,
 	#[serde(rename = "999")]
 	#[serde(with = "serde_bytes")]
-	pub sharedGroupEncInviterGroupInfoKey: Vec<u8>,
+	pub sharedGroupEncInviterGroupInfoSessionKey: Vec<u8>,
 	#[serde(rename = "1000")]
 	#[serde(with = "serde_bytes")]
-	pub sharedGroupEncSharedGroupInfoKey: Vec<u8>,
+	pub sharedGroupEncSharedGroupInfoSessionKey: Vec<u8>,
 	#[serde(rename = "1001")]
 	pub sharedGroup: GeneratedId,
 	#[serde(rename = "1420")]
 	pub sharedGroupKeyVersion: i64,
+	#[serde(rename = "2037")]
+	#[serde(with = "serde_bytes")]
+	pub sharedGroupEncInviterGroupInfoInstanceKey: Option<Vec<u8>>,
+	#[serde(rename = "2038")]
+	pub inviterGroupInfoInstanceKeyVersion: Option<i64>,
+	#[serde(rename = "2039")]
+	#[serde(with = "serde_bytes")]
+	pub sharedGroupEncSharedGroupInfoInstanceKey: Option<Vec<u8>>,
+	#[serde(rename = "2040")]
+	pub sharedGroupInfoInstanceKeyVersion: Option<i64>,
 }
 
 impl Entity for SharedGroupData {
@@ -2215,11 +2233,16 @@ pub struct GroupInvitationPutData {
 	pub userGroupEncGroupKey: Vec<u8>,
 	#[serde(rename = "1014")]
 	#[serde(with = "serde_bytes")]
-	pub sharedGroupEncInviteeGroupInfoKey: Vec<u8>,
+	pub sharedGroupEncInviteeGroupInfoSessionKey: Vec<u8>,
 	#[serde(rename = "1418")]
 	pub userGroupKeyVersion: i64,
 	#[serde(rename = "1419")]
 	pub sharedGroupKeyVersion: i64,
+	#[serde(rename = "2041")]
+	#[serde(with = "serde_bytes")]
+	pub sharedGroupEncInviteeGroupInfoInstanceKey: Option<Vec<u8>>,
+	#[serde(rename = "2042")]
+	pub inviteeGroupInfoInstanceKeyVersion: Option<i64>,
 	#[serde(rename = "1015")]
 	pub receivedInvitation: IdTupleGenerated,
 }
@@ -3461,15 +3484,13 @@ pub struct ManageLabelServicePostIn {
 	pub _format: i64,
 	#[serde(rename = "1486")]
 	#[serde(with = "serde_bytes")]
-	pub ownerEncSessionKey: Option<Vec<u8>>,
+	pub ownerEncSessionKey: Vec<u8>,
 	#[serde(rename = "1487")]
-	pub ownerKeyVersion: Option<i64>,
+	pub ownerKeyVersion: i64,
 	#[serde(rename = "1488")]
 	pub ownerGroup: GeneratedId,
 	#[serde(rename = "1489")]
-	pub data: Option<ManageLabelServiceLabelData>,
-	#[serde(rename = "2046")]
-	pub mailSet: Option<MailSetTransferAggregatedType>,
+	pub data: ManageLabelServiceLabelData,
 
 	#[serde(default)]
 	pub _errors: Errors,
@@ -3510,9 +3531,7 @@ pub struct ManageLabelServicePutIn {
 	#[serde(rename = "1498")]
 	pub label: IdTupleGenerated,
 	#[serde(rename = "1499")]
-	pub data: Option<ManageLabelServiceLabelData>,
-	#[serde(rename = "2045")]
-	pub mailSet: Option<MailSetTransferAggregatedType>,
+	pub data: ManageLabelServiceLabelData,
 
 	#[serde(default)]
 	pub _errors: Errors,
@@ -5055,36 +5074,6 @@ impl Entity for MailTransferAggregatedType {
 		TypeRef {
 			app: AppName::Tutanota,
 			type_id: TypeId::from(2027),
-		}
-	}
-}
-
-#[derive(uniffi::Record, Clone, Serialize, Deserialize)]
-#[cfg_attr(any(test, feature = "testing"), derive(PartialEq, Debug))]
-pub struct MailSetTransferAggregatedType {
-	#[serde(rename = "2038")]
-	pub _id: Option<CustomId>,
-	#[serde(rename = "2039")]
-	#[serde(with = "serde_bytes")]
-	pub _ownerEncSessionKey: Option<Vec<u8>>,
-	#[serde(rename = "2040")]
-	pub _ownerKeyVersion: Option<i64>,
-	#[serde(rename = "2041")]
-	pub name: String,
-	#[serde(rename = "2044")]
-	pub color: Option<String>,
-	#[serde(rename = "2042")]
-	pub parentFolder: Option<IdTupleGenerated>,
-
-	#[serde(default)]
-	pub _errors: Errors,
-}
-
-impl Entity for MailSetTransferAggregatedType {
-	fn type_ref() -> TypeRef {
-		TypeRef {
-			app: AppName::Tutanota,
-			type_id: TypeId::from(2037),
 		}
 	}
 }

@@ -1707,6 +1707,42 @@ const typeModels = {
 				"cardinality": "One",
 				"encrypted": false,
 				"transferredAttributeId": null
+			},
+			"2043": {
+				"final": false,
+				"name": "externalMailEncMailGroupInfoInstanceKey",
+				"id": 2043,
+				"type": "Bytes",
+				"cardinality": "ZeroOrOne",
+				"encrypted": false,
+				"transferredAttributeId": null
+			},
+			"2044": {
+				"final": false,
+				"name": "externalMailGroupInfoInstanceKeyVersion",
+				"id": 2044,
+				"type": "Number",
+				"cardinality": "ZeroOrOne",
+				"encrypted": false,
+				"transferredAttributeId": null
+			},
+			"2045": {
+				"final": false,
+				"name": "externalUserEncUserGroupInfoInstanceKey",
+				"id": 2045,
+				"type": "Bytes",
+				"cardinality": "ZeroOrOne",
+				"encrypted": false,
+				"transferredAttributeId": null
+			},
+			"2046": {
+				"final": false,
+				"name": "externalUserGroupInfoInstanceKeyVersion",
+				"id": 2046,
+				"type": "Number",
+				"cardinality": "ZeroOrOne",
+				"encrypted": false,
+				"transferredAttributeId": null
 			}
 		},
 		"associations": {
@@ -2672,7 +2708,7 @@ const typeModels = {
 				"name": "folderName",
 				"id": 453,
 				"type": "String",
-				"cardinality": "ZeroOrOne",
+				"cardinality": "One",
 				"encrypted": true,
 				"transferredAttributeId": null
 			},
@@ -2681,7 +2717,7 @@ const typeModels = {
 				"name": "ownerEncSessionKey",
 				"id": 454,
 				"type": "Bytes",
-				"cardinality": "ZeroOrOne",
+				"cardinality": "One",
 				"encrypted": false,
 				"transferredAttributeId": null
 			},
@@ -2699,7 +2735,7 @@ const typeModels = {
 				"name": "ownerKeyVersion",
 				"id": 1414,
 				"type": "Number",
-				"cardinality": "ZeroOrOne",
+				"cardinality": "One",
 				"encrypted": false,
 				"transferredAttributeId": null
 			}
@@ -2712,16 +2748,6 @@ const typeModels = {
 				"type": "LIST_ELEMENT_ASSOCIATION_GENERATED",
 				"cardinality": "ZeroOrOne",
 				"refTypeId": 429,
-				"dependency": null,
-				"transferredAttributeId": null
-			},
-			"2043": {
-				"final": true,
-				"name": "mailSet",
-				"id": 2043,
-				"type": "AGGREGATION",
-				"cardinality": "ZeroOrOne",
-				"refTypeId": 2037,
 				"dependency": null,
 				"transferredAttributeId": null
 			}
@@ -5927,7 +5953,7 @@ const typeModels = {
 			},
 			"999": {
 				"final": true,
-				"name": "sharedGroupEncInviterGroupInfoKey",
+				"name": "sharedGroupEncInviterGroupInfoSessionKey",
 				"id": 999,
 				"type": "Bytes",
 				"cardinality": "One",
@@ -5936,7 +5962,7 @@ const typeModels = {
 			},
 			"1000": {
 				"final": true,
-				"name": "sharedGroupEncSharedGroupInfoKey",
+				"name": "sharedGroupEncSharedGroupInfoSessionKey",
 				"id": 1000,
 				"type": "Bytes",
 				"cardinality": "One",
@@ -5958,6 +5984,42 @@ const typeModels = {
 				"id": 1420,
 				"type": "Number",
 				"cardinality": "One",
+				"encrypted": false,
+				"transferredAttributeId": null
+			},
+			"2037": {
+				"final": true,
+				"name": "sharedGroupEncInviterGroupInfoInstanceKey",
+				"id": 2037,
+				"type": "Bytes",
+				"cardinality": "ZeroOrOne",
+				"encrypted": false,
+				"transferredAttributeId": null
+			},
+			"2038": {
+				"final": true,
+				"name": "inviterGroupInfoInstanceKeyVersion",
+				"id": 2038,
+				"type": "Number",
+				"cardinality": "ZeroOrOne",
+				"encrypted": false,
+				"transferredAttributeId": null
+			},
+			"2039": {
+				"final": true,
+				"name": "sharedGroupEncSharedGroupInfoInstanceKey",
+				"id": 2039,
+				"type": "Bytes",
+				"cardinality": "ZeroOrOne",
+				"encrypted": false,
+				"transferredAttributeId": null
+			},
+			"2040": {
+				"final": true,
+				"name": "sharedGroupInfoInstanceKeyVersion",
+				"id": 2040,
+				"type": "Number",
+				"cardinality": "ZeroOrOne",
 				"encrypted": false,
 				"transferredAttributeId": null
 			}
@@ -6099,7 +6161,7 @@ const typeModels = {
 			},
 			"1014": {
 				"final": true,
-				"name": "sharedGroupEncInviteeGroupInfoKey",
+				"name": "sharedGroupEncInviteeGroupInfoSessionKey",
 				"id": 1014,
 				"type": "Bytes",
 				"cardinality": "One",
@@ -6121,6 +6183,24 @@ const typeModels = {
 				"id": 1419,
 				"type": "Number",
 				"cardinality": "One",
+				"encrypted": false,
+				"transferredAttributeId": null
+			},
+			"2041": {
+				"final": true,
+				"name": "sharedGroupEncInviteeGroupInfoInstanceKey",
+				"id": 2041,
+				"type": "Bytes",
+				"cardinality": "ZeroOrOne",
+				"encrypted": false,
+				"transferredAttributeId": null
+			},
+			"2042": {
+				"final": true,
+				"name": "inviteeGroupInfoInstanceKeyVersion",
+				"id": 2042,
+				"type": "Number",
+				"cardinality": "ZeroOrOne",
 				"encrypted": false,
 				"transferredAttributeId": null
 			}
@@ -8986,7 +9066,7 @@ const typeModels = {
 				"name": "ownerEncSessionKey",
 				"id": 1486,
 				"type": "Bytes",
-				"cardinality": "ZeroOrOne",
+				"cardinality": "One",
 				"encrypted": false,
 				"transferredAttributeId": null
 			},
@@ -8995,7 +9075,7 @@ const typeModels = {
 				"name": "ownerKeyVersion",
 				"id": 1487,
 				"type": "Number",
-				"cardinality": "ZeroOrOne",
+				"cardinality": "One",
 				"encrypted": false,
 				"transferredAttributeId": null
 			},
@@ -9015,18 +9095,8 @@ const typeModels = {
 				"name": "data",
 				"id": 1489,
 				"type": "AGGREGATION",
-				"cardinality": "ZeroOrOne",
+				"cardinality": "One",
 				"refTypeId": 1480,
-				"dependency": null,
-				"transferredAttributeId": null
-			},
-			"2046": {
-				"final": true,
-				"name": "mailSet",
-				"id": 2046,
-				"type": "AGGREGATION",
-				"cardinality": "ZeroOrOne",
-				"refTypeId": 2037,
 				"dependency": null,
 				"transferredAttributeId": null
 			}
@@ -9107,18 +9177,8 @@ const typeModels = {
 				"name": "data",
 				"id": 1499,
 				"type": "AGGREGATION",
-				"cardinality": "ZeroOrOne",
+				"cardinality": "One",
 				"refTypeId": 1480,
-				"dependency": null,
-				"transferredAttributeId": null
-			},
-			"2045": {
-				"final": true,
-				"name": "mailSet",
-				"id": 2045,
-				"type": "AGGREGATION",
-				"cardinality": "ZeroOrOne",
-				"refTypeId": 2037,
 				"dependency": null,
 				"transferredAttributeId": null
 			}
@@ -13037,78 +13097,6 @@ const typeModels = {
 				"refTypeId": 2001,
 				"dependency": null,
 				"transferredAttributeId": 1306
-			}
-		}
-	},
-	"2037": {
-		"name": "MailSetTransferAggregatedType",
-		"app": "tutanota",
-		"version": 114,
-		"since": 114,
-		"type": "AGGREGATED_TYPE",
-		"id": 2037,
-		"rootId": "CHR1dGFub3RhAAf1",
-		"versioned": false,
-		"encrypted": false,
-		"isPublic": true,
-		"targetTypeId": 429,
-		"values": {
-			"2038": {
-				"final": true,
-				"name": "_id",
-				"id": 2038,
-				"type": "CustomId",
-				"cardinality": "One",
-				"encrypted": false,
-				"transferredAttributeId": null
-			},
-			"2039": {
-				"final": true,
-				"name": "_ownerEncSessionKey",
-				"id": 2039,
-				"type": "Bytes",
-				"cardinality": "ZeroOrOne",
-				"encrypted": false,
-				"transferredAttributeId": 434
-			},
-			"2040": {
-				"final": true,
-				"name": "_ownerKeyVersion",
-				"id": 2040,
-				"type": "Number",
-				"cardinality": "ZeroOrOne",
-				"encrypted": false,
-				"transferredAttributeId": 1399
-			},
-			"2041": {
-				"final": true,
-				"name": "name",
-				"id": 2041,
-				"type": "String",
-				"cardinality": "One",
-				"encrypted": true,
-				"transferredAttributeId": 435
-			},
-			"2044": {
-				"final": true,
-				"name": "color",
-				"id": 2044,
-				"type": "String",
-				"cardinality": "ZeroOrOne",
-				"encrypted": true,
-				"transferredAttributeId": 1479
-			}
-		},
-		"associations": {
-			"2042": {
-				"final": true,
-				"name": "parentFolder",
-				"id": 2042,
-				"type": "LIST_ELEMENT_ASSOCIATION_GENERATED",
-				"cardinality": "ZeroOrOne",
-				"refTypeId": 429,
-				"dependency": null,
-				"transferredAttributeId": 439
 			}
 		}
 	}
