@@ -7,6 +7,7 @@ import {
 	collectToMap,
 	difference,
 	getFirstOrThrow,
+	groupBy,
 	groupByAndMap,
 	isEmpty,
 	isNotEmpty,
@@ -38,6 +39,7 @@ import {
 	TypeRef,
 } from "@tutao/meta"
 import {
+	FileTypeRef,
 	ImportedFileMailTypeRef,
 	ImportedImapMailTypeRef,
 	Mail,
@@ -53,11 +55,11 @@ import {
 import { User } from "@tutao/entities/sys"
 import { GroupType } from "../../../../entities/sys/Utils"
 import { CryptoFacade } from "../../../../platform-kit/base/base-crypto/CryptoFacade"
-import { isDraft } from "../../mail/model/MailChecks"
 import { ConnectionError } from "@tutao/rest-client/error"
 import { IncomingServerJson } from "../../../../platform-kit/instance-pipeline/TypeMapper"
 import { CommonImportedMail } from "./WebMailIndexer"
 import { MailImportType, MailSetKind } from "../../../../entities/tutanota/Utils"
+import { isDraft } from "../../mail/model/MailChecks"
 
 EnvProvider.assertWorkerOrNode()
 
@@ -283,6 +285,14 @@ export class OfflineMailIndexer implements MailIndexer {
 			const mails = await this.entityClient.loadRange(MailTypeRef, mailList, currentId, this.indexChunkSize, true)
 			if (isEmpty(mails)) {
 				return
+			}
+
+			const attachmentIds: IdTuple[] = mails.flatMap((mails) => mails.attachments)
+			const attachmentsByList: Map<Id, IdTuple[]> = groupBy(attachmentIds, listIdPart)
+
+			// load all files into cache (we should be able to retrieve these later if we are successful)
+			for (const [list, ids] of attachmentsByList.entries()) {
+				await this.entityClient.loadMultiple(FileTypeRef, list, ids.map(elementIdPart))
 			}
 
 			const lastMail = lastThrow(mails)
