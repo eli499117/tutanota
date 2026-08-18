@@ -19,7 +19,7 @@ import { ViewSlider } from "../../../../ui/nav/ViewSlider"
 import { windowFacade } from "../../../common/misc/WindowFacade"
 import { renderHeaderButtons } from "../../../calendar-app/gui/HeaderButtons"
 import { styles } from "../../../../ui/styles"
-import { ProgrammingError } from "@tutao/app-env"
+import { CancelledError, ProgrammingError } from "@tutao/app-env"
 import { showDateRangeSelectionDialog } from "../../../calendar-app/calendar/gui/pickers/DatePickerDialog"
 import { BackgroundColumnLayout } from "../../../../ui/BackgroundColumnLayout"
 import { theme } from "../../../../ui/theme"
@@ -46,7 +46,10 @@ import {
 	cancelAllTransfersConfirmationDialog,
 	driveItemContextMenu,
 	driveKeyboardShortcuts,
+	isMobileDriveLayout,
+	newItemActions,
 	operationUpdateSnackbar,
+	showDuplicateFilesChoiceDialog,
 	showRenameDialog,
 } from "../../drive/view/DriveGuiUtils"
 import { AppPromo } from "../../../common/gui/AppPromo"
@@ -55,12 +58,14 @@ import { client } from "../../../../platform-kit/app-env/boot/ClientDetector"
 import { SearchViewSearchBar } from "../../../common/search/SearchViewSearchBar"
 import { keyManager, Shortcut } from "../../../../ui/utils/KeyManager"
 import { listSelectionKeyboardShortcuts, onlySingleSelection } from "../../../../ui/base/ListUtils"
+import { DriveFilePicker } from "../../drive/view/DriveFilePicker"
 
 export interface DriveSearchViewAttrs extends TopLevelAttrs {
 	header: AppHeaderAttrs
 	makeViewModel: () => DriveSearchViewModel
 	drawerAttrs: DrawerMenuAttrs
 	showMoveItemDialog: (items: FolderItem[], moveItems: MoveItems) => unknown
+	filePicker: DriveFilePicker
 	bottomNav?: () => Children
 }
 
@@ -72,6 +77,7 @@ export class DriveSearchView extends BaseTopLevelView implements TopLevelView<Dr
 	private readonly filtersColumn: ViewColumn
 	private readonly searchResultsColumn: ViewColumn
 	private readonly searchViewModel: DriveSearchViewModel
+	private filePicker: DriveFilePicker
 	private readonly showMoveItemDialog: DriveViewAttrs["showMoveItemDialog"]
 	private startOfTheWeekOffset: number
 	private operationUpdatesSubscription: Stream<unknown> | null = null
@@ -80,13 +86,27 @@ export class DriveSearchView extends BaseTopLevelView implements TopLevelView<Dr
 		super()
 		this.searchViewModel = vnode.attrs.makeViewModel()
 		this.showMoveItemDialog = vnode.attrs.showMoveItemDialog
+		this.filePicker = vnode.attrs.filePicker
 		this.startOfTheWeekOffset = this.searchViewModel.getStartOfTheWeekOffset()
 		this.filtersColumn = new ViewColumn(
 			{
 				view: () => {
 					return m(FolderColumnView, {
 						drawer: vnode.attrs.drawerAttrs,
-						button: null,
+						button: isMobileDriveLayout()
+							? null
+							: {
+									label: "newDriveItem_action",
+									click: (ev, dom) => {
+										createDropdown({
+											lazyButtons: () =>
+												newItemActions({
+													onUploadFiles: () => this.onPickFilesForUpload(dom.getBoundingClientRect()),
+													onUploadFolders: () => this.onPickFoldersForUpload(dom.getBoundingClientRect()),
+												}),
+										})(ev, ev.target as HTMLElement)
+									},
+								},
 						content: [
 							m(SidebarSection, {
 								name: "searchFilters_label",
@@ -133,6 +153,21 @@ export class DriveSearchView extends BaseTopLevelView implements TopLevelView<Dr
 		)
 
 		this.viewSlider = new ViewSlider([this.filtersColumn, this.searchResultsColumn], windowFacade)
+	}
+	async onPickFilesForUpload(boundingRect: DOMRect): Promise<void> {
+		const files = await this.filePicker.pickFiles(boundingRect)
+		await this.searchViewModel.uploadFiles(files, showDuplicateFilesChoiceDialog)
+	}
+
+	private async onPickFoldersForUpload(boundingRect: DOMRect): Promise<void> {
+		try {
+			const folders = await this.filePicker.pickFolders(boundingRect)
+			await this.searchViewModel.uploadFiles([], showDuplicateFilesChoiceDialog, folders)
+		} catch (e) {
+			if (!(e instanceof CancelledError)) {
+				throw e
+			}
+		}
 	}
 
 	private selectedItemsActions(listState: ListState<FolderItem>, showMoveItemDialog: DriveViewAttrs["showMoveItemDialog"]): DriveSelectedItemsActions {

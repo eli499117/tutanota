@@ -21,6 +21,7 @@ import { LoginController } from "../../../common/api/main/LoginController"
 import {
 	comparisonFunction,
 	ComparisonFunction,
+	DiskFolder,
 	FileFolderItem,
 	FolderFolderItem,
 	FolderItem,
@@ -36,7 +37,7 @@ import { DriveTransfers, DriveTransferState } from "../../drive/view/DriveTransf
 import { TransferId } from "../../../../entities/drive/Utils"
 import { elementIdPart, isSameId, isSameSingleId, listIdPart } from "@tutao/meta"
 import { DriveFacade, DriveRootFolders } from "../../../common/api/worker/facades/lazy/DriveFacade"
-import { CancelledError } from "@tutao/app-env"
+import { CancelledError, isDesktop } from "@tutao/app-env"
 import Stream from "mithril/stream"
 import { DriveFile } from "@tutao/entities/drive"
 import { Router } from "../../../../ui/ScopedThrottledRouter"
@@ -51,6 +52,9 @@ import { ListItemSelectionCallbacks } from "../../../../ui/base/ListUtils"
 import { listItemSelectionCallbacksFor } from "../../../common/misc/ListModelUtils"
 import { createDriveRestriction, getDriveRestriction } from "../model/DriveSearchUtils"
 import { SearchToken } from "../../../../ui/utils/QueryTokenUtils"
+import { DuplicateFilesDialogDecision } from "../../drive/view/DriveGuiUtils"
+import { FileReference, WebFile } from "../../../../entities/tutanota/Utils"
+import { WindowFacade } from "../../../common/misc/WindowFacade"
 
 const SEARCH_PAGE_SIZE = 100
 
@@ -103,6 +107,8 @@ export class DriveSearchViewModel {
 		private readonly updateUi: () => unknown,
 		public readonly transferProgressDispatcher: TransferProgressDispatcher,
 		private readonly driveOperations: DriveModel,
+		private readonly windowFacade: WindowFacade,
+		private readonly showWindowCloseConfirmation: () => Promise<boolean>,
 	) {}
 
 	readonly init = async () => {
@@ -450,5 +456,38 @@ export class DriveSearchViewModel {
 		this.listStateSubscription?.end(true)
 		this.listStateSubscription = null
 		this.searchResult?.dispose()
+	}
+	private deleteWindowCloseListener: (() => unknown) | null = null
+
+	private ensureWindowCloseListener() {
+		if (this.deleteWindowCloseListener == null) {
+			this.deleteWindowCloseListener = this.windowFacade.addWindowCloseListener(async () => {
+				if (isDesktop()) {
+					const cancelAndClose: boolean = await this.showWindowCloseConfirmation()
+
+					if (cancelAndClose) {
+						this.deleteWindowCloseListener?.()
+						this.windowFacade.closeWindow()
+					}
+				}
+			})
+		}
+	}
+
+	async uploadFiles(
+		files: FileReference[] | WebFile[],
+		showDuplicateFilesChoiceDialog: (fileName: string, fileCount: number) => Promise<DuplicateFilesDialogDecision>,
+		folders?: readonly DiskFolder<WebFile | FileReference>[],
+	) {
+		if (this.roots == null) {
+			console.log("drive is not initialized")
+			return
+		}
+		const targetFolderId: IdTuple = this.roots?.root
+		await this.listModel.waitLoad()
+		const uploading = await this.driveOperations.uploadFiles(files, targetFolderId, showDuplicateFilesChoiceDialog, folders)
+		if (uploading) {
+			this.ensureWindowCloseListener()
+		}
 	}
 }

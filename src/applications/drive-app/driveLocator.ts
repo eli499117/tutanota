@@ -1053,6 +1053,8 @@ class DriveLocator implements CommonLocator {
 				redraw,
 				this.transferProgressDispatcher,
 				driveOperations,
+				windowFacade,
+				() => showWindowCloseConfirmation("closeWindowWithActiveTransfers_msg"),
 			)
 	}
 }

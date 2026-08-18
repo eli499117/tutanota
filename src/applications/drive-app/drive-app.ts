@@ -230,6 +230,7 @@ import("../../ui/translations/en.js")
 					header: AppHeaderAttrs
 					makeViewModel: () => DriveSearchViewModel
 					showMoveItemDialog: (items: FolderItem[], moveItems: MoveItems) => unknown
+					filePicker: DriveFilePicker
 				}
 			>(
 				{
@@ -237,6 +238,7 @@ import("../../ui/translations/en.js")
 						const { DriveSearchView } = await import("./search/view/DriveSearchView.js")
 						const drawerAttrsFactory = await driveLocator.drawerAttrsFactory()
 						const makeViewModel = await driveLocator.driveSearchViewModelFactory()
+						const filePicker = await driveLocator.driveFilePicker()
 						return {
 							component: DriveSearchView,
 							cache: {
@@ -244,6 +246,7 @@ import("../../ui/translations/en.js")
 								drawerAttrsFactory,
 								makeViewModel,
 								showMoveItemDialog: (items, moveItems) => driveLocator.showMoveItemDialog(items, moveItems),
+								filePicker,
 							},
 						}
 					},
@@ -253,6 +256,7 @@ import("../../ui/translations/en.js")
 							drawerAttrs: cache.drawerAttrsFactory(),
 							makeViewModel: cache.makeViewModel,
 							showMoveItemDialog: cache.showMoveItemDialog,
+							filePicker: cache.filePicker,
 						}
 					},
 				},

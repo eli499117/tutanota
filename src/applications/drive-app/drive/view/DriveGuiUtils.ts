@@ -28,26 +28,26 @@ export function newItemActions({
 }: {
 	onUploadFiles: (event: MouseEvent, dom: HTMLElement) => unknown
 	onUploadFolders: (event: MouseEvent, dom: HTMLElement) => unknown
-	onCreateFolder: (event: MouseEvent, dom: HTMLElement) => unknown
+	onCreateFolder?: (event: MouseEvent, dom: HTMLElement) => unknown
 	onPaste?: (event: MouseEvent, dom: HTMLElement) => unknown
 }): DropdownButtonAttrs[] {
 	let newItemDropdown: DropdownButtonAttrs[] = []
-	newItemDropdown.push(
-		{
+	if (isNotNull(onCreateFolder)) {
+		newItemDropdown.push({
 			click: (event, dom) => {
 				onCreateFolder(event, dom)
 			},
 			label: lang.getTranslation("createFolder_action"),
 			icon: Icons.FolderFilled,
+		})
+	}
+	newItemDropdown.push({
+		click: (event, dom) => {
+			onUploadFiles(event, dom)
 		},
-		{
-			click: (event, dom) => {
-				onUploadFiles(event, dom)
-			},
-			label: lang.getTranslation("uploadFile_action"),
-			icon: Icons.Upload,
-		},
-	)
+		label: lang.getTranslation("uploadFile_action"),
+		icon: Icons.Upload,
+	})
 	if (isBrowser() || isDesktop()) {
 		newItemDropdown.push({
 			click: (event, dom) => {
