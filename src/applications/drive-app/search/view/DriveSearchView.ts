@@ -14,7 +14,7 @@ import { createDropdown } from "../../../../ui/base/Dropdown"
 import { SearchCategoryType } from "../../../common/api/worker/search/SearchTypes"
 import { Icons } from "../../../../ui/base/icons/Icons"
 import { formatDate } from "../../../../ui/utils/Formatter"
-import { isEmpty, isNotEmpty, isNotNull, isSameDayOfDate } from "@tutao/utils"
+import { isEmpty, isNotEmpty, isNotNull, isSameDayOfDate, lazyMemoized } from "@tutao/utils"
 import { ViewSlider } from "../../../../ui/nav/ViewSlider"
 import { windowFacade } from "../../../common/misc/WindowFacade"
 import { renderHeaderButtons } from "../../../calendar-app/gui/HeaderButtons"
@@ -27,7 +27,7 @@ import { DriveTransferStack, DriveTransferStackAttrs } from "../../drive/view/Dr
 import { Dialog } from "../../../../ui/base/Dialog"
 import { FolderItem, FolderItemId, OperationUpdate, SortColumn } from "../../drive/view/DriveUtils"
 import { MoveItems } from "../../drive/view/DriveMoveItemDialog"
-import { ListLoadingState, ListState } from "../../../../ui/base/List"
+import { ListLoadingState, ListState, MultiselectMode } from "../../../../ui/base/List"
 import { IconButton } from "../../../../ui/base/IconButton"
 import { EnterMultiselectIconButton } from "../../../../ui/EnterMultiselectIconButton"
 import { DriveViewAttrs } from "../../drive/view/DriveView"
@@ -42,11 +42,19 @@ import { MultiselectMobileHeader } from "../../../../ui/MultiselectMobileHeader"
 import { selectionAttrsForList } from "../../../common/misc/ListModel"
 import { MobileActionAttrs, MobileActionBar } from "../../../../ui/MobileActionBar"
 import Stream from "mithril/stream"
-import { cancelAllTransfersConfirmationDialog, driveItemContextMenu, operationUpdateSnackbar, showRenameDialog } from "../../drive/view/DriveGuiUtils"
+import {
+	cancelAllTransfersConfirmationDialog,
+	driveItemContextMenu,
+	driveKeyboardShortcuts,
+	operationUpdateSnackbar,
+	showRenameDialog,
+} from "../../drive/view/DriveGuiUtils"
 import { AppPromo } from "../../../common/gui/AppPromo"
 import { DriveActionBar } from "../../drive/view/DriveActionBar"
 import { client } from "../../../../platform-kit/app-env/boot/ClientDetector"
 import { SearchViewSearchBar } from "../../../common/search/SearchViewSearchBar"
+import { keyManager, Shortcut } from "../../../../ui/utils/KeyManager"
+import { listSelectionKeyboardShortcuts, onlySingleSelection } from "../../../../ui/base/ListUtils"
 
 export interface DriveSearchViewAttrs extends TopLevelAttrs {
 	header: AppHeaderAttrs
@@ -64,12 +72,14 @@ export class DriveSearchView extends BaseTopLevelView implements TopLevelView<Dr
 	private readonly filtersColumn: ViewColumn
 	private readonly searchResultsColumn: ViewColumn
 	private readonly searchViewModel: DriveSearchViewModel
+	private readonly showMoveItemDialog: DriveViewAttrs["showMoveItemDialog"]
 	private startOfTheWeekOffset: number
 	private operationUpdatesSubscription: Stream<unknown> | null = null
 
 	constructor(vnode: Vnode<DriveSearchViewAttrs>) {
 		super()
 		this.searchViewModel = vnode.attrs.makeViewModel()
+		this.showMoveItemDialog = vnode.attrs.showMoveItemDialog
 		this.startOfTheWeekOffset = this.searchViewModel.getStartOfTheWeekOffset()
 		this.filtersColumn = new ViewColumn(
 			{
@@ -166,14 +176,55 @@ export class DriveSearchView extends BaseTopLevelView implements TopLevelView<Dr
 		this.searchViewModel.onNewUrl(args, requestedPath)
 		m.redraw()
 	}
+
+	private readonly shortcuts = lazyMemoized<ReadonlyArray<Shortcut>>(() => {
+		const actions = () => this.selectedItemsActions(this.searchViewModel.listState(), this.showMoveItemDialog)
+
+		return [
+			...listSelectionKeyboardShortcuts(MultiselectMode.Enabled, () => this.searchViewModel.listModel),
+			...driveKeyboardShortcuts({
+				clear: () => {
+					this.searchViewModel.selectionEvents.selectNone()
+				},
+				rename: () => {
+					const selectedItem = onlySingleSelection(this.searchViewModel.listState())
+					if (selectedItem) {
+						this.onRename(selectedItem)
+					}
+				},
+				selectAll: () => {
+					this.searchViewModel.selectionEvents.selectAll()
+				},
+				copy: () => {
+					actions().onCopy?.()
+				},
+				cut: () => {
+					actions().onCut?.()
+				},
+				move: () => {
+					actions().onMove?.()
+				},
+				delete: () => {
+					actions().onTrash?.()
+				},
+				open: () => {
+					this.searchViewModel.openActiveItem()
+				},
+			}),
+		]
+	})
+
 	oncreate() {
 		this.operationUpdatesSubscription = this.searchViewModel.operationUpdates().map((maybeOperationUpdate: OperationUpdate | null) => {
 			operationUpdateSnackbar(maybeOperationUpdate)
 		})
+		keyManager.registerShortcuts(this.shortcuts())
 	}
+
 	onremove() {
 		this.operationUpdatesSubscription?.end(true)
 		this.operationUpdatesSubscription = null
+		keyManager.unregisterShortcuts(this.shortcuts())
 		this.searchViewModel.dispose()
 	}
 

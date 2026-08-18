@@ -8,7 +8,7 @@ import { Icons } from "../../../../ui/base/icons/Icons"
 import { styles } from "../../../../ui/styles"
 import { DriveFolder } from "@tutao/entities/drive"
 import { getFileBaseNameAndExtensions } from "../../../../ui/utils/FileUtils"
-import { isBrowser, isDesktop, OperationStatus } from "@tutao/app-env"
+import { isBrowser, isDesktop, Keys, OperationStatus } from "@tutao/app-env"
 import { assertNotNull, isNotNull } from "@tutao/utils"
 import { FileActions } from "./DriveFolderContentEntry"
 import { DriveSelectedItemsActions } from "./DriveFolderNav"
@@ -18,6 +18,7 @@ import { showSnackBar } from "../../../../ui/base/SnackBar"
 import { handleUncaughtError } from "../../../common/misc/ErrorHandler"
 import { ListItemSelectionCallbacks } from "../../../../ui/base/ListUtils"
 import { DriveTransferState } from "./DriveTransferController"
+import { Shortcut } from "../../../../ui/utils/KeyManager"
 
 export function newItemActions({
 	onUploadFiles,
@@ -401,4 +402,123 @@ export function operationUpdateSnackbar(maybeOperationUpdate: OperationUpdate | 
 
 export function isMobileDriveLayout(): boolean {
 	return styles.isUsingBottomNavigation()
+}
+export interface DriveKeyboardShortcutActions {
+	clear: () => unknown
+	rename: () => unknown
+	selectAll: () => unknown
+	copy: () => unknown
+	cut: () => unknown
+	move: () => unknown
+	delete: () => unknown
+	open: () => unknown
+	create?: () => unknown
+	paste?: () => unknown
+}
+
+export function driveKeyboardShortcuts(actions: DriveKeyboardShortcutActions): Shortcut[] {
+	const shortcuts: Shortcut[] = [
+		{
+			key: Keys.ESC,
+			enabled: () => true,
+			help: "clearFileSelection_action",
+			ctrlOrCmd: false,
+			exec: () => {
+				actions.clear()
+			},
+		},
+		{
+			key: Keys.F2,
+			enabled: () => true,
+			help: "renameItem_action",
+			ctrlOrCmd: false,
+			exec: () => {
+				actions.rename()
+			},
+		},
+		{
+			key: Keys.A,
+			enabled: () => true,
+			help: "selectAllFiles_action",
+			ctrlOrCmd: true,
+			exec: () => {
+				actions.selectAll()
+			},
+		},
+		{
+			key: Keys.C,
+			enabled: () => true,
+			help: "copy_action",
+			ctrlOrCmd: true,
+			exec: () => {
+				actions.copy()
+			},
+		},
+		{
+			key: Keys.X,
+			enabled: () => true,
+			help: "cut_action",
+			ctrlOrCmd: true,
+			exec: () => {
+				actions.cut()
+			},
+		},
+		{
+			key: Keys.DELETE,
+			enabled: () => true,
+			help: "trash_action",
+			exec: () => {
+				actions.delete()
+			},
+		},
+		{
+			key: Keys.BACKSPACE,
+			enabled: () => true,
+			help: "trash_action",
+			exec: () => {
+				actions.delete()
+			},
+		},
+		{
+			key: Keys.RETURN,
+			enabled: () => true,
+			help: "open_action",
+			exec: () => {
+				actions.open()
+			},
+		},
+		{
+			key: Keys.V,
+			enabled: () => true,
+			help: "move_action",
+			exec: () => {
+				actions.move()
+			},
+		},
+	]
+
+	if (actions.create) {
+		shortcuts.push({
+			key: Keys.N,
+			enabled: () => true,
+			help: "newDriveItem_action",
+			exec: () => {
+				actions.create?.()
+			},
+		})
+	}
+
+	if (actions.paste) {
+		shortcuts.push({
+			key: Keys.V,
+			enabled: () => true,
+			help: "paste_action",
+			ctrlOrCmd: true,
+			exec: () => {
+				actions.paste?.()
+			},
+		})
+	}
+
+	return shortcuts
 }

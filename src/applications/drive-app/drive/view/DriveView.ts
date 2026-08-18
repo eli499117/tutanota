@@ -17,13 +17,14 @@ import { DriveSidebar } from "./Sidebar"
 import { listSelectionKeyboardShortcuts } from "../../../../ui/base/ListUtils"
 import { ListState, MultiselectMode } from "../../../../ui/base/List"
 import { keyManager, Shortcut } from "../../../../ui/utils/KeyManager"
-import { AppType, CancelledError, isAndroidApp, Keys, UpgradePromptType } from "@tutao/app-env"
+import { AppType, CancelledError, isAndroidApp, UpgradePromptType } from "@tutao/app-env"
 import { formatStorageSize } from "../../../../ui/utils/Formatter"
 import { DriveProgressBar } from "./DriveProgressBar"
 import { modal } from "../../../../ui/base/Modal"
 import {
 	cancelAllTransfersConfirmationDialog,
 	driveFolderName,
+	driveKeyboardShortcuts,
 	isMobileDriveLayout,
 	newItemActions,
 	operationUpdateSnackbar,
@@ -138,92 +139,42 @@ export class DriveView extends BaseTopLevelView implements TopLevelView<DriveVie
 
 		this.shortcuts = [
 			...listSelectionKeyboardShortcuts(MultiselectMode.Enabled, () => this.driveViewModel.selectionEvents),
-			{
-				key: Keys.ESC,
-				enabled: () => true,
-				help: "clearFileSelection_action",
-				ctrlOrCmd: false,
-				exec: () => {
+			...driveKeyboardShortcuts({
+				clear: () => {
 					this.driveViewModel.selectionEvents.selectNone()
 				},
-			},
-			{
-				key: Keys.F2,
-				enabled: () => true,
-				help: "renameItem_action",
-				ctrlOrCmd: false,
-				exec: () => {
+				rename: () => {
 					const selectedItem = this.driveViewModel.getSelectedItem()
 					if (selectedItem) {
 						this.onRename(selectedItem)
 					}
 				},
-			},
-			{
-				key: Keys.A,
-				enabled: () => true,
-				help: "selectAllFiles_action",
-				ctrlOrCmd: true,
-				exec: () => {
+				selectAll: () => {
 					this.driveViewModel.selectionEvents.selectAll()
 				},
-			},
-			{
-				key: Keys.C,
-				enabled: () => true,
-				help: "copy_action",
-				ctrlOrCmd: true,
-				exec: () => {
+				copy: () => {
 					this.driveViewModel.copySelectedItems()
 				},
-			},
-			{
-				key: Keys.X,
-				enabled: () => true,
-				help: "cut_action",
-				ctrlOrCmd: true,
-				exec: () => {
+				cut: () => {
 					this.driveViewModel.cutSelectedItems()
 				},
-			},
-			{
-				key: Keys.V,
-				enabled: () => true,
-				help: "paste_action",
-				ctrlOrCmd: true,
-				exec: () => {
+				paste: () => {
 					this.onPaste()
 				},
-			},
-			{
-				key: Keys.DELETE,
-				enabled: () => true,
-				help: "trash_action",
-				exec: () => {
+				move: () => {
+					const selectedItems = this.driveViewModel.listState().selectedItems
+
+					vnode.attrs.showMoveItemDialog(Array.from(selectedItems), (items: readonly FolderItemId[], destination: DriveFolder) =>
+						this.driveViewModel.moveItems(items, destination._id),
+					)
+				},
+				delete: () => {
 					this.onDeleteDwim()
 				},
-			},
-			{
-				key: Keys.BACKSPACE,
-				enabled: () => true,
-				help: "trash_action",
-				exec: () => {
-					this.onDeleteDwim()
-				},
-			},
-			{
-				key: Keys.RETURN,
-				enabled: () => true,
-				help: "open_action",
-				exec: () => {
+				open: () => {
 					this.driveViewModel.openActiveItem()
 				},
-			},
-			{
-				key: Keys.N,
-				enabled: () => true,
-				help: "newDriveItem_action",
-				exec: () => {
+				create: () => {
 					const dropdown = new Dropdown(
 						() =>
 							newItemActions({
@@ -236,19 +187,7 @@ export class DriveView extends BaseTopLevelView implements TopLevelView<DriveVie
 					dropdown.setOrigin(getDetachedDropdownBounds())
 					modal.displayUnique(dropdown, false)
 				},
-			},
-			{
-				key: Keys.V,
-				enabled: () => true,
-				help: "move_action",
-				exec: () => {
-					const selectedItems = this.driveViewModel.listState().selectedItems
-
-					vnode.attrs.showMoveItemDialog(Array.from(selectedItems), (items: readonly FolderItemId[], destination: DriveFolder) =>
-						this.driveViewModel.moveItems(items, destination._id),
-					)
-				},
-			},
+			}),
 		]
 	}
 

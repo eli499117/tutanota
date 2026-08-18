@@ -435,6 +435,17 @@ export class DriveSearchViewModel {
 		return listItemSelectionCallbacksFor(this.listModel)
 	}
 
+	openActiveItem() {
+		const activeItem = this.listModel.getActiveItem()
+		if (activeItem != null) {
+			if (activeItem.type === "folder") {
+				this.navigateToFolder(activeItem.folder._id)
+			} else {
+				this.openFile(activeItem.file)
+			}
+		}
+	}
+
 	dispose() {
 		this.listStateSubscription?.end(true)
 		this.listStateSubscription = null
